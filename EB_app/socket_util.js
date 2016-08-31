@@ -17,8 +17,8 @@ var parse_args = function (socket) {
     if (socket.handshake.query.nodes) {
         var nodes = socket.handshake.query.nodes;
         if (!Array.isArray(nodes)) {
-            nodes.replace('[', '');
-            nodes.replace(']', '');
+            nodes = nodes.replace('[', '');
+            nodes = nodes.replace(']', '');
             nodes = nodes.split(',');
         }
         args.nodes = nodes
@@ -26,8 +26,8 @@ var parse_args = function (socket) {
     if (socket.handshake.query.features_of_interest) {
         var features = socket.handshake.query.features_of_interest;
         if (!Array.isArray(features)) {
-            features.replace('[', '');
-            features.replace(']', '');
+            features = features.replace('[', '');
+            features = features.replace(']', '');
             features = features.split(',');
         }
         args.features_of_interest = features
@@ -35,8 +35,8 @@ var parse_args = function (socket) {
     if (socket.handshake.query.sensors) {
         var sensors = socket.handshake.query.sensors;
         if (!Array.isArray(sensors)) {
-            sensors.replace('[', '');
-            sensors.replace(']', '');
+            sensors = sensors.replace('[', '');
+            sensors = sensors.replace(']', '');
             sensors = sensors.split(',');
         }
         args.sensors = sensors
@@ -47,7 +47,7 @@ var parse_args = function (socket) {
     // since ObservationStream is assumed to carry only AoT data,
     // setting the sensor_network does not filter streaming results - it is only used in validation
     if (!(socket.handshake.query.sensor_network)) {
-        args.sensor_network = 'ArrayOfThings'
+        args.sensor_network = 'array_of_things'
     }
     else {
         args.sensor_network = socket.handshake.query.sensor_network
@@ -63,12 +63,7 @@ var parse_args = function (socket) {
  */
 var validate_args = function (args) {
     var p = new Promise(function (fulfill, reject) {
-        var validation_query = util.format('http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/%s/query?limit=0', args.sensor_network);
-        for (var i = 0; i < Object.keys(args).length; i++) {
-            if (Object.keys(args)[i] != 'sensor_network') {
-                validation_query += '&' + Object.keys(args)[i] + '=' + args[Object.keys(args)[i]]
-            }
-        }
+        var validation_query = make_validation_query(args);
         http.get(validation_query, function (response) {
             var output = '';
             response.on('data', function (data) {
@@ -95,7 +90,22 @@ var validate_args = function (args) {
 };
 
 /**
- * log performance data JSON to file
+ * generate validation query for query API
+ *
+ * @param: {Object} args
+ */
+var make_validation_query = function (args) {
+    var validation_query = util.format('http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/%s/query?limit=0', args.sensor_network);
+    for (var i = 0; i < Object.keys(args).length; i++) {
+        if (Object.keys(args)[i] != 'sensor_network') {
+            validation_query += '&' + Object.keys(args)[i] + '=' + args[Object.keys(args)[i]]
+        }
+    }
+    return validation_query
+};
+
+/**
+ * log performance data JSON to file in /var/app/current
  *
  * @param: {Integer} socket_count
  */
@@ -105,10 +115,11 @@ var log_performance = function (socket_count) {
             freemem: os.freemem(),
             sockets: socket_count,
             time: Date.now()
-        })+ os.EOL)
+        }) + os.EOL)
 };
 
 
 module.exports.parse_args = parse_args;
 module.exports.validate_args = validate_args;
 module.exports.log_performance = log_performance;
+module.exports.make_validation_query = make_validation_query;

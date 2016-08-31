@@ -1,4 +1,3 @@
-var util = require('util');
 var http = require('http');
 var express = require('express');
 
@@ -12,22 +11,18 @@ var rooms = {};
 var socket_count = 0;
 
 io.on('connect', function (socket) {
+    console.log(socket.handshake.query);
+    // check if the client provides valid authentication
     if (socket.handshake.query.consumer_token) {
         if (socket.handshake.query.consumer_token == process.env.CONSUMER_TOKEN) {
             console.log('consumer connected');
             // pass filtered 'internal_data' messages from consumer app to 'data' messages received by sockets
             socket.on('internal_data', function (data) {
-                var room_args;
-                for (room_name in rooms) {
-                    if (rooms.hasOwnProperty(room_name)) {
-                        room_args = JSON.parse(room_name);
-                        if (((!room_args.nodes) || (room_args.nodes.indexOf(data.node_id) > -1)) &&
-                            ((!room_args.features_of_interest) || (room_args.features_of_interest.indexOf(data.feature_of_interest) > -1)) &&
-                            ((!room_args.sensors) || (room_args.sensors.indexOf(data.sensor) > -1))) {
-                            io.to(room_name).emit('data', data);
-                        }
+                Object.keys(rooms).forEach(function (room_name) {
+                    if (valid_data(data, room_name)) {
+                        io.to(room_name).emit('data', data);
                     }
-                }
+                });
             });
             socket.on('disconnect', function () {
                 console.log('consumer disconnected')
@@ -47,52 +42,97 @@ io.on('connect', function (socket) {
             socket.disconnect();
             break block
         }
-        socket_util.validate_args(args).then(function (){
-            if (socket_count < process.env.MAX_SOCKETS) {
-                // add socket to a room based on its query arguments
-                socket.join(JSON.stringify(args));
-                if (rooms[JSON.stringify(args)]) {
-                    rooms[JSON.stringify(args)]++;
-                }
-                else {
-                    rooms[JSON.stringify(args)] = 1;
-                }
-                socket_count++;
-                console.log('rooms open:');
-                console.log(rooms);
-                if (process.env.PERFORMANCE_TEST == 'true') {
-                    socket_util.log_performance(socket_count);
-                }
-            }
-            else {
-                socket_count++;
-                socket.emit('internal_error', 'Server traffic is too high - cannot connect');
-                socket.disconnect();
-                console.log('max sockets reached - client rejected')
-            }
-        }, function(err) {
+        var room_name = JSON.stringify(args);
+        increment_room(room_name);
+        socket_util.validate_args(args).then(function () {
+            // assign socket to room based on query arguments
+            join_room(socket, room_name);
+        }, function (err) {
             socket.emit('internal_error', err);
             socket.disconnect()
         });
 
         // decrement the correct property of the room object on disconnection
         socket.on('disconnect', function () {
-            if (rooms[JSON.stringify(args)] > 1) {
-                rooms[JSON.stringify(args)]--;
-            }
-            else {
-                delete rooms[JSON.stringify(args)];
-            }
-            socket_count--;
-            console.log('rooms open:');
-            console.log(rooms);
-            if (process.env.PERFORMANCE_TEST == 'true') {
-                socket_util.log_performance(socket_count);
-            }
+            decrement_room(room_name);
         });
     }
 });
 
 server.listen(8081, function () {
-    console.log("listening for clients on port 80 ==> 8081");
+    console.log("listening for clients on port 80 ==nginx==> 8081");
 });
+
+/**
+ * check if consumer should emit a given data event to a certain room
+ *
+ * @param: {Object} data
+ * @param: {String} room_name = stringified JSON of arguments used to filter data
+ */
+var valid_data = function(data, room_name) {
+    var room_args = JSON.parse(room_name);
+    return (((!room_args.nodes) || (room_args.nodes.indexOf(data.node_id) > -1)) &&
+    ((!room_args.features_of_interest) || (room_args.features_of_interest.indexOf(data.feature_of_interest) > -1)) &&
+    ((!room_args.sensors) || (room_args.sensors.indexOf(data.sensor) > -1)))
+};
+
+/**
+ * increment the room object and socket count
+ * report performance data if requested
+ *
+ * @param: {String} room_name
+ */
+function increment_room(room_name) {
+    if (rooms[room_name]) {
+        rooms[room_name]++;
+    }
+    else {
+        rooms[room_name] = 1;
+    }
+    socket_count++;
+    if (process.env.PERFORMANCE_TEST == 'true') {
+        socket_util.log_performance(socket_count);
+    }
+}
+
+/**
+ * decrement the room object and socket count
+ * report performance data if requested
+ *
+ * @param: {String} room_name
+ */
+function decrement_room(room_name) {
+    if (rooms[room_name] > 1) {
+        rooms[room_name]--;
+    }
+    else {
+        delete rooms[room_name];
+    }
+    socket_count--;
+    if (process.env.PERFORMANCE_TEST == 'true') {
+        socket_util.log_performance(socket_count);
+    }
+    console.log('rooms open:');
+    console.log(rooms);
+}
+
+/**
+ * join socket to room if there are not too many sockets already connected
+ *
+ * @param: {socket} socket
+ * @param: {String} room_name
+ */
+function join_room(socket, room_name) {
+    if (socket_count <= process.env.MAX_SOCKETS) {
+        socket.join(room_name);
+        console.log('rooms open:');
+        console.log(rooms);
+    }
+    else {
+        socket.emit('internal_error', 'Server traffic is too high - cannot connect');
+        socket.disconnect();
+        console.log('max sockets reached - client rejected')
+    }
+}
+
+module.exports.valid_data = valid_data;
