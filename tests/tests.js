@@ -4,8 +4,8 @@
  * $ nodeunit tests.js
  */
 
-var socket_util = require('./EB_app/socket_util');
-var index = require('./EB_app/index');
+var socket_util = require('../EB_app/socket_util');
+var index = require('../EB_app/index');
 var _ = require('underscore');
 
 // default should be everything from array_of_things
