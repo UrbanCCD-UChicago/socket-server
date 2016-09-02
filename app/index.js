@@ -71,9 +71,9 @@ server.listen(8081, function () {
  */
 var valid_data = function(data, room_name) {
     var room_args = JSON.parse(room_name);
-    return (((!room_args.nodes) || (room_args.nodes.indexOf(data.node_id) > -1)) &&
-    ((!room_args.features_of_interest) || (room_args.features_of_interest.indexOf(data.feature_of_interest) > -1)) &&
-    ((!room_args.sensors) || (room_args.sensors.indexOf(data.sensor) > -1)))
+    return (((!room_args.nodes) || (room_args.nodes.indexOf(data.node_id) >= 0)) &&
+    ((!room_args.features_of_interest) || (room_args.features_of_interest.indexOf(data.feature_of_interest) >= 0)) &&
+    ((!room_args.sensors) || (room_args.sensors.indexOf(data.sensor) >= 0)))
 };
 
 /**
