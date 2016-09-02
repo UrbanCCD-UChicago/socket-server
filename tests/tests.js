@@ -66,14 +66,14 @@ exports.parse_args = function (test) {
 };
 
 // check that validation query is generated correctly
-exports.make_validation_query = function (test) {
+exports.generate_validation_query = function (test) {
     var args = {
         sensor_network: 'array_of_things',
         sensors: ['HTU21D'],
         features_of_interest: ['temperature', 'humidity'],
         nodes: ['000', '02B', '011']
     };
-    test.equal(socket_util.make_validation_query(args),
+    test.equal(socket_util.validation_query(args),
         'http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/array_of_things/query?limit=0&' +
         'sensors=HTU21D&' +
         'features_of_interest=temperature,humidity&' +

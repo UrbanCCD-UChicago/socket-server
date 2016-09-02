@@ -63,8 +63,7 @@ var parse_args = function (socket) {
  */
 var validate_args = function (args) {
     var p = new Promise(function (fulfill, reject) {
-        var validation_query = make_validation_query(args);
-        http.get(validation_query, function (response) {
+        http.get(validation_query(args), function (response) {
             var output = '';
             response.on('data', function (data) {
                 output += data;
@@ -94,7 +93,7 @@ var validate_args = function (args) {
  *
  * @param: {Object} args
  */
-var make_validation_query = function (args) {
+var validation_query = function (args) {
     var validation_query = util.format('http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/%s/query?limit=0', args.sensor_network);
     for (var i = 0; i < Object.keys(args).length; i++) {
         if (Object.keys(args)[i] != 'sensor_network') {
@@ -134,5 +133,5 @@ var log_performance = function (socket_count) {
 module.exports.parse_args = parse_args;
 module.exports.validate_args = validate_args;
 module.exports.log_performance = log_performance;
-module.exports.make_validation_query = make_validation_query;
+module.exports.validation_query = validation_query;
 module.exports.valid_data = valid_data;
