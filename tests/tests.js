@@ -5,7 +5,6 @@
  */
 
 var socket_util = require('../app/socket_util');
-var index = require('../app/index');
 var _ = require('underscore');
 
 // default should be everything from array_of_things
@@ -137,9 +136,9 @@ exports.filter_data = function (test) {
         }
     };
 
-    test.ok(index.valid_data(data1, room_name));
-    test.ok(!index.valid_data(data2, room_name));
-    test.ok(!index.valid_data(data3, room_name));
-    test.ok(!index.valid_data(data4, room_name));
+    test.ok(socket_util.valid_data(data1, room_name));
+    test.ok(!socket_util.valid_data(data2, room_name));
+    test.ok(!socket_util.valid_data(data3, room_name));
+    test.ok(!socket_util.valid_data(data4, room_name));
     test.done();
 };

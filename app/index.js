@@ -19,7 +19,7 @@ io.on('connect', function (socket) {
             // pass filtered 'internal_data' messages from consumer app to 'data' messages received by sockets
             socket.on('internal_data', function (data) {
                 Object.keys(rooms).forEach(function (room_name) {
-                    if (valid_data(data, room_name)) {
+                    if (socket_util.valid_data(data, room_name)) {
                         io.to(room_name).emit('data', data);
                     }
                 });
@@ -62,19 +62,6 @@ io.on('connect', function (socket) {
 server.listen(8081, function () {
     console.log("listening for clients on port 80 ==nginx==> 8081");
 });
-
-/**
- * check if consumer should emit a given data event to a certain room
- *
- * @param: {Object} data
- * @param: {String} room_name = stringified JSON of arguments used to filter data
- */
-var valid_data = function(data, room_name) {
-    var room_args = JSON.parse(room_name);
-    return (((!room_args.nodes) || (room_args.nodes.indexOf(data.node_id) >= 0)) &&
-    ((!room_args.features_of_interest) || (room_args.features_of_interest.indexOf(data.feature_of_interest) >= 0)) &&
-    ((!room_args.sensors) || (room_args.sensors.indexOf(data.sensor) >= 0)))
-};
 
 /**
  * increment the room object and socket count
@@ -134,5 +121,3 @@ function join_room(socket, room_name) {
         console.log('max sockets reached - client rejected')
     }
 }
-
-module.exports.valid_data = valid_data;

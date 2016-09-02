@@ -105,6 +105,19 @@ var make_validation_query = function (args) {
 };
 
 /**
+ * check if consumer should emit a given data event to a certain room
+ *
+ * @param: {Object} data
+ * @param: {String} room_name = stringified JSON of arguments used to filter data
+ */
+var valid_data = function(data, room_name) {
+    var room_args = JSON.parse(room_name);
+    return (((!room_args.nodes) || (room_args.nodes.indexOf(data.node_id) >= 0)) &&
+    ((!room_args.features_of_interest) || (room_args.features_of_interest.indexOf(data.feature_of_interest) >= 0)) &&
+    ((!room_args.sensors) || (room_args.sensors.indexOf(data.sensor) >= 0)))
+};
+
+/**
  * log performance data JSON to file in /var/app/current
  *
  * @param: {Integer} socket_count
@@ -118,8 +131,8 @@ var log_performance = function (socket_count) {
         }) + os.EOL)
 };
 
-
 module.exports.parse_args = parse_args;
 module.exports.validate_args = validate_args;
 module.exports.log_performance = log_performance;
 module.exports.make_validation_query = make_validation_query;
+module.exports.valid_data = valid_data;
