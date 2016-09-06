@@ -15,8 +15,6 @@ deploy:
   app: Socket-Server
   env: socketServer-env
   bucket_name: elasticbeanstalk-us-east-1-031052761859
-  on:
-    branch: master
 notifications:
   slack:
     secure: IsCJP58JKofvwy4jVC4DEZSUShLp+i4V94dzhKSoFrhRFKeT3Te/Hn+uDPBT+ZwTcs7QF0k1DfBHTZt0za1U/Q2fabhxxarrtR3v9DGWo2OfdBjyY9TM05JmZyFESov4CxzA4USvFd+GO7P6QY1IhdDF8oSa9dCViTAerBOGLMk=
