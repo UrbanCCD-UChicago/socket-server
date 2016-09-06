@@ -13,6 +13,7 @@ deploy:
   region: us-east-1
   app: Socket-Server
   env: socketServer-env
+  bucket_name: elasticbeanstalk-us-east-1-031052761859
   on:
     repo: UrbanCCD-UChicago/socket-server
 notifications:
