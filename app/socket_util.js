@@ -25,6 +25,8 @@ var parse_args = function (socket) {
                     args[key] = JSON.parse(q[key]);
                 }
                 catch (err) {
+                    q[key] = q[key].replace('[','');
+                    q[key] = q[key].replace(']','');
                     args[key] = q[key].split(',');
                 }
             }
