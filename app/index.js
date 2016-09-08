@@ -12,7 +12,7 @@ var socket_count = 0;
 
 io.on('connect', function (socket) {
     console.log(socket.handshake.query);
-    // check if the client provides valid authentication
+    // check if the client provides valid consumer authentication
     if (socket.handshake.query.consumer_token) {
         if (socket.handshake.query.consumer_token == process.env.CONSUMER_TOKEN) {
             console.log('consumer connected');

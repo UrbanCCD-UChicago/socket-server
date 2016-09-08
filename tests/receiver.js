@@ -1,6 +1,6 @@
 /**
  * simple testing script to connect a socket to the server
- * receive data, transport upgrades, and internal errors
+ * prints data, transport upgrades, and internal errors
  */
 
 var io = require('socket.io-client');

@@ -73,7 +73,7 @@ var validate_args = function (args) {
                 // JSON.parse will try to parse the html error page and fail
                 try {
                     if (JSON.parse(output).error) {
-                        reject(JSON.parse(output).error);
+                        reject({error: JSON.parse(output).error});
                     }
                     else {
                         fulfill(output);
