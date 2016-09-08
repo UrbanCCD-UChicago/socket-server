@@ -14,33 +14,22 @@ var fs = require('fs');
  */
 var parse_args = function (socket) {
     var args = {};
-    if (socket.handshake.query.nodes) {
-        var nodes = socket.handshake.query.nodes;
-        if (!Array.isArray(nodes)) {
-            nodes = nodes.replace('[', '');
-            nodes = nodes.replace(']', '');
-            nodes = nodes.split(',');
+    var q = socket.handshake.query;
+    Object.keys(q).forEach(function (key) {
+        if (key != 'EIO' && key != 'b64' && key != 't' && key != 'transport') {
+            if (typeof q[key] == 'object') {
+                args[key] = q[key];
+            }
+            else {
+                try {
+                    args[key] = JSON.parse(q[key]);
+                }
+                catch (err) {
+                    args[key] = q[key].split(',');
+                }
+            }
         }
-        args.nodes = nodes
-    }
-    if (socket.handshake.query.features_of_interest) {
-        var features = socket.handshake.query.features_of_interest;
-        if (!Array.isArray(features)) {
-            features = features.replace('[', '');
-            features = features.replace(']', '');
-            features = features.split(',');
-        }
-        args.features_of_interest = features
-    }
-    if (socket.handshake.query.sensors) {
-        var sensors = socket.handshake.query.sensors;
-        if (!Array.isArray(sensors)) {
-            sensors = sensors.replace('[', '');
-            sensors = sensors.replace(']', '');
-            sensors = sensors.split(',');
-        }
-        args.sensors = sensors
-    }
+    });
     // if user doesn't pass any args, or doesn't pass a sensor_network arg,
     // stream them everything from ObservationStream
 
@@ -52,6 +41,7 @@ var parse_args = function (socket) {
     else {
         args.sensor_network = socket.handshake.query.sensor_network
     }
+    console.log(args);
     return args
 };
 
@@ -63,6 +53,7 @@ var parse_args = function (socket) {
  */
 var validate_args = function (args) {
     var p = new Promise(function (fulfill, reject) {
+        console.log(validation_query(args));
         http.get(validation_query(args), function (response) {
             var output = '';
             response.on('data', function (data) {
@@ -80,7 +71,7 @@ var validate_args = function (args) {
                     }
                 }
                 catch (err) {
-                    reject('Error parsing validation query return. ' + err);
+                    reject({error: 'Error parsing validation query return. ' + err});
                 }
             });
         });
@@ -95,11 +86,11 @@ var validate_args = function (args) {
  */
 var validation_query = function (args) {
     var validation_query = util.format('http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/%s/query?limit=0', args.sensor_network);
-    for (var i = 0; i < Object.keys(args).length; i++) {
-        if (Object.keys(args)[i] != 'sensor_network') {
-            validation_query += '&' + Object.keys(args)[i] + '=' + args[Object.keys(args)[i]]
+    Object.keys(args).forEach(function (key) {
+        if (key != 'sensor_network') {
+            validation_query += '&' + key + '=' + args[key]
         }
-    }
+    });
     return validation_query
 };
 

@@ -38,7 +38,7 @@ io.on('connect', function (socket) {
             var args = socket_util.parse_args(socket)
         }
         catch (err) {
-            socket.emit('internal_error', 'Could not parse query args. ' + err);
+            socket.emit('internal_error', {error: 'Could not parse query args. ' + err});
             socket.disconnect();
             break block
         }
@@ -116,7 +116,7 @@ function join_room(socket, room_name) {
         console.log(rooms);
     }
     else {
-        socket.emit('internal_error', 'Server traffic is too high - cannot connect');
+        socket.emit('internal_error', {error: 'Server traffic is too high - cannot connect'});
         socket.disconnect();
         console.log('max sockets reached - client rejected')
     }
