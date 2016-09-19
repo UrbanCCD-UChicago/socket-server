@@ -54,9 +54,9 @@ exports.parse_args = function (test) {
 
     var correct_args = {
         sensor_network: 'array_of_things',
-        sensors: ['HTU21D'],
+        sensors: ['htu21d'],
         features_of_interest: ['temperature', 'humidity'],
-        nodes: ['000', '02B', '011']
+        nodes: ['000', '02b', '011']
     };
 
     test.ok(_.isEqual(args1, correct_args));

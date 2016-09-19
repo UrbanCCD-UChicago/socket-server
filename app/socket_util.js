@@ -18,13 +18,14 @@ var parse_args = function (socket) {
     Object.keys(q).forEach(function (key) {
         if (key != 'EIO' && key != 'b64' && key != 't' && key != 'transport') {
             if (typeof q[key] == 'object') {
-                args[key] = q[key];
+                args[key] = q[key].toString().toLowerCase().split(',');
             }
             else {
                 try {
-                    args[key] = JSON.parse(q[key]);
+                    args[key] = JSON.parse(q[key]).toString().toLowerCase().split(',');
                 }
                 catch (err) {
+                    q[key] = q[key].toLowerCase();
                     q[key] = q[key].replace('[','');
                     q[key] = q[key].replace(']','');
                     args[key] = q[key].split(',');
@@ -43,7 +44,6 @@ var parse_args = function (socket) {
     else {
         args.sensor_network = socket.handshake.query.sensor_network
     }
-    console.log(args);
     return args
 };
 

@@ -77,7 +77,7 @@ function increment_room(room_name) {
         rooms[room_name] = 1;
     }
     socket_count++;
-    if (process.env.PERFORMANCE_TEST == 'true') {
+    if (process.env.PERFORMANCE_TEST.toUpperCase() == 'TRUE') {
         socket_util.log_performance(socket_count);
     }
 }
@@ -96,7 +96,7 @@ function decrement_room(room_name) {
         delete rooms[room_name];
     }
     socket_count--;
-    if (process.env.PERFORMANCE_TEST == 'true') {
+    if (process.env.PERFORMANCE_TEST.toUpperCase() == 'TRUE') {
         socket_util.log_performance(socket_count);
     }
     console.log('rooms open:');
