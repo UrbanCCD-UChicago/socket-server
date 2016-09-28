@@ -34,8 +34,7 @@ var parse_args = function (socket) {
         }
     });
     // if user doesn't pass any args, or doesn't pass a sensor_network arg,
-    // stream them everything from ObservationStream
-
+    // stream them everything from ObservationStream.
     // since ObservationStream is assumed to carry only AoT data,
     // setting the sensor_network does not filter streaming results - it is only used in validation
     if (!(socket.handshake.query.sensor_network)) {
@@ -51,11 +50,10 @@ var parse_args = function (socket) {
  * send a GET request to the query API that will return no data, but will identify validation errors
  *
  * @param {Object} args
- * @return {Promise} p yields nothing on fulfillment, yields parsing errors on rejection
+ * @return {Promise} p yields empty query return on fulfillment, yields parsing errors on rejection
  */
 var validate_args = function (args) {
     var p = new Promise(function (fulfill, reject) {
-        console.log(validation_query(args));
         http.get(validation_query(args), function (response) {
             var output = '';
             response.on('data', function (data) {

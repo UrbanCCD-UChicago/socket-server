@@ -17,5 +17,3 @@ socket.io.engine.on('upgrade', function(transport){
 socket.on('internal_error', function (err) {
     console.log(err);
 });
-
-

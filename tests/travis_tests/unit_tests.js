@@ -1,10 +1,10 @@
 /**
  * $ npm install nodeunit -g
  *
- * $ nodeunit tests.js
+ * $ nodeunit travis_tests.js
  */
 
-var socket_util = require('../app/socket_util');
+var socket_util = require('../../app/socket_util');
 var _ = require('underscore');
 
 // default should be everything from array_of_things
@@ -22,8 +22,8 @@ exports.parse_args = function (test) {
         handshake: {
             query: {
                 sensor_network: 'array_of_things',
-                sensors: '[HTU21D]',
-                features_of_interest: '[temperature,humidity]',
+                sensors: '[htu21d]',
+                features_of_interest: '[temperature,relative_humidity]',
                 nodes: '[000,02B,011]'
             }
         }
@@ -33,8 +33,8 @@ exports.parse_args = function (test) {
         handshake: {
             query: {
                 sensor_network: 'array_of_things',
-                sensors: 'HTU21D',
-                features_of_interest: 'temperature,humidity',
+                sensors: 'htu21d',
+                features_of_interest: 'temperature,relative_humidity',
                 nodes: '000,02B,011'
             }
         }
@@ -44,8 +44,8 @@ exports.parse_args = function (test) {
         handshake: {
             query: {
                 sensor_network: 'array_of_things',
-                sensors: ['HTU21D'],
-                features_of_interest: ['temperature', 'humidity'],
+                sensors: ['htu21d'],
+                features_of_interest: ['temperature', 'relative_humidity'],
                 nodes: ['000', '02B', '011']
             }
         }
@@ -55,7 +55,7 @@ exports.parse_args = function (test) {
     var correct_args = {
         sensor_network: 'array_of_things',
         sensors: ['htu21d'],
-        features_of_interest: ['temperature', 'humidity'],
+        features_of_interest: ['temperature', 'relative_humidity'],
         nodes: ['000', '02b', '011']
     };
 
@@ -69,14 +69,14 @@ exports.parse_args = function (test) {
 exports.generate_validation_query = function (test) {
     var args = {
         sensor_network: 'array_of_things',
-        sensors: ['HTU21D'],
-        features_of_interest: ['temperature', 'humidity'],
+        sensors: ['htu21d'],
+        features_of_interest: ['temperature', 'relative_humidity'],
         nodes: ['000', '02B', '011']
     };
     test.equal(socket_util.validation_query(args),
         'http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/array_of_things/query?limit=0&' +
-        'sensors=HTU21D&' +
-        'features_of_interest=temperature,humidity&' +
+        'sensors=htu21d&' +
+        'features_of_interest=temperature,relative_humidity&' +
         'nodes=000,02B,011');
     test.done();
 };
@@ -85,8 +85,8 @@ exports.generate_validation_query = function (test) {
 exports.filter_data = function (test) {
     var args = {
         sensor_network: 'array_of_things',
-        sensors: ['HTU21D'],
-        features_of_interest: ['temperature', 'humidity'],
+        sensors: ['htu21d'],
+        features_of_interest: ['temperature', 'relative_humidity'],
         nodes: ['000', '02B', '011']
     };
     var room_name = JSON.stringify(args);
@@ -94,9 +94,9 @@ exports.filter_data = function (test) {
     // correct
     var data1 = {
         "node_id": "000",
-        "node_config": "011ab78",
+        "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
-        "sensor": "HTU21D",
+        "sensor": "htu21d",
         "feature_of_interest": "temperature",
         "results": {
             temperature: 37.90
@@ -105,9 +105,9 @@ exports.filter_data = function (test) {
     // bad FoI
     var data2 = {
         "node_id": "000",
-        "node_config": "011ab78",
+        "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
-        "sensor": "HTU21D",
+        "sensor": "htu21d",
         "feature_of_interest": "atmospheric_pressure",
         "results": {
             pressure: 87.22
@@ -116,10 +116,10 @@ exports.filter_data = function (test) {
     // bad node
     var data3 = {
         "node_id": "00C",
-        "node_config": "011ab78",
+        "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
-        "sensor": "HTU21D",
-        "feature_of_interest": "humidity",
+        "sensor": "htu21d",
+        "feature_of_interest": "relative_humidity",
         "results": {
             humidity: 67.31
         }
@@ -127,10 +127,10 @@ exports.filter_data = function (test) {
     // bad sensor
     var data4 = {
         "node_id": "02B",
-        "node_config": "011ab78",
+        "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
-        "sensor": "TGR67",
-        "feature_of_interest": "humidity",
+        "sensor": "tgr67",
+        "feature_of_interest": "relative_humidity",
         "results": {
             humidity: 81.77
         }
