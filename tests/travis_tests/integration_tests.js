@@ -8,6 +8,8 @@
 
 // don't produce an application.log file with server performance data
 process.env['PERFORMANCE_TEST'] = 'FALSE';
+// don't throttle mock clients
+process.env['MAX_SOCKETS'] = 1000;
 // set the authentication token that the mapper/consumer uses
 process.env['CONSUMER_TOKEN'] = 'test';
 // send arg validation http requests to localhost:8080
