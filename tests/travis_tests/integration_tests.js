@@ -1,9 +1,10 @@
 /**
+ * to run these tests:
+ *
  * $ npm install nodeunit -g
  *
- * $ nodeunit travis_tests.js
+ * $ nodeunit integration_tests.js
  */
-// TODO: test wrapper a la this? http://stackoverflow.com/questions/25769825/is-there-a-way-to-know-that-nodeunit-has-finished-all-tests
 
 // don't produce an application.log file with server performance data
 process.env['PERFORMANCE_TEST'] = 'FALSE';
@@ -206,7 +207,7 @@ exports.send_receive_data = function (test) {
             z: 7.7
         }
     });
-    
+
     setTimeout(function () {
         test.equals(data1.length, 3);
         test.equals(data2.length, 6);

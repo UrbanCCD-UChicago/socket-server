@@ -1,7 +1,9 @@
 /**
+ * to run these tests:
+ * 
  * $ npm install nodeunit -g
  *
- * $ nodeunit travis_tests.js
+ * $ nodeunit unit_tests.js
  */
 
 var socket_util = require('../../app/socket_util');
