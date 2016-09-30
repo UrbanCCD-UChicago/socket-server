@@ -13,12 +13,12 @@
   "dependencies": {
     "promise": "~7.1.1",
     "redis": "~2.6.2",
-    "socket.io": "~1.4.6"
+    "socket.io": "~1.4.6",
+    "express": "~4.13.4"
   },
   "devDependencies": {
     "socket.io-client": "~1.4.8",
     "body-parser": "~1.15.2",
-    "express": "~4.13.4",
     "exit": "~0.1.2",
     "nodeunit": "~0.9.4",
     "underscore": "~1.8.3"
