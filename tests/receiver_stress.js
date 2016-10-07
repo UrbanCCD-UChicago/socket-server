@@ -12,7 +12,7 @@ function open_socket() {
     var socket = io.connect('http://streaming.plenar.io');
 
     socket.on('data', function (data) {
-        console.log(data);
+        // console.log(data);
     });
     socket.on('internal_error', function (err) {
         console.log(err);
@@ -28,7 +28,7 @@ function open_recurse(count) {
             count++;
             open_recurse(count)
         }
-    }, 700)
+    }, 1000)
 }
 
 open_recurse(1);

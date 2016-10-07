@@ -25,7 +25,7 @@ exports.parse_args = function (test) {
             query: {
                 sensor_network: 'array_of_things',
                 sensors: '[htu21d]',
-                features_of_interest: '[temperature,relative_humidity]',
+                features: '[temperature,relative_humidity]',
                 nodes: '[000,02B,011]'
             }
         }
@@ -36,7 +36,7 @@ exports.parse_args = function (test) {
             query: {
                 sensor_network: 'array_of_things',
                 sensors: 'htu21d',
-                features_of_interest: 'temperature,relative_humidity',
+                features: 'temperature,relative_humidity',
                 nodes: '000,02B,011'
             }
         }
@@ -47,7 +47,7 @@ exports.parse_args = function (test) {
             query: {
                 sensor_network: 'array_of_things',
                 sensors: ['htu21d'],
-                features_of_interest: ['temperature', 'relative_humidity'],
+                features: ['temperature', 'relative_humidity'],
                 nodes: ['000', '02B', '011']
             }
         }
@@ -57,7 +57,7 @@ exports.parse_args = function (test) {
     var correct_args = {
         sensor_network: 'array_of_things',
         sensors: ['htu21d'],
-        features_of_interest: ['temperature', 'relative_humidity'],
+        features: ['temperature', 'relative_humidity'],
         nodes: ['000', '02b', '011']
     };
 
@@ -68,18 +68,9 @@ exports.parse_args = function (test) {
 };
 
 // check that validation query is generated correctly
-exports.generate_validation_query = function (test) {
-    var args = {
-        sensor_network: 'array_of_things',
-        sensors: ['htu21d'],
-        features_of_interest: ['temperature', 'relative_humidity'],
-        nodes: ['000', '02B', '011']
-    };
-    test.equal(socket_util.validation_query(args),
-        'http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/array_of_things/query?limit=0&' +
-        'sensors=htu21d&' +
-        'features_of_interest=temperature,relative_humidity&' +
-        'nodes=000,02B,011');
+exports.field_query = function (test) {
+    test.equal(socket_util.field_query('array_of_things', 'nodes', '011'),
+        'http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/array_of_things/nodes/011');
     test.done();
 };
 
@@ -88,7 +79,7 @@ exports.filter_data = function (test) {
     var args = {
         sensor_network: 'array_of_things',
         sensors: ['htu21d'],
-        features_of_interest: ['temperature', 'relative_humidity'],
+        features: ['temperature', 'relative_humidity'],
         nodes: ['000', '02B', '011']
     };
     var room_name = JSON.stringify(args);
@@ -99,7 +90,7 @@ exports.filter_data = function (test) {
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "htu21d",
-        "feature_of_interest": "temperature",
+        "feature": "temperature",
         "results": {
             temperature: 37.90
         }
@@ -110,7 +101,7 @@ exports.filter_data = function (test) {
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "htu21d",
-        "feature_of_interest": "atmospheric_pressure",
+        "feature": "atmospheric_pressure",
         "results": {
             pressure: 87.22
         }
@@ -121,7 +112,7 @@ exports.filter_data = function (test) {
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "htu21d",
-        "feature_of_interest": "relative_humidity",
+        "feature": "relative_humidity",
         "results": {
             humidity: 67.31
         }
@@ -132,7 +123,7 @@ exports.filter_data = function (test) {
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "tgr67",
-        "feature_of_interest": "relative_humidity",
+        "feature": "relative_humidity",
         "results": {
             humidity: 81.77
         }

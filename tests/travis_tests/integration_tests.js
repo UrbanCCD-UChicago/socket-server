@@ -38,26 +38,11 @@ exports.send_receive_data = function (test) {
     var nodes = ['001', '002', '003'];
     var features = ['temperature', 'relative_humidity', 'magnetic_field'];
     var sensors = ['oss33', 'yuu99', 'htu21d', 'tmp112'];
-    app.get('/v1/api/sensor-networks/array_of_things/query', function (req, res) {
-        if (req.query.nodes) {
-            req.query.nodes = req.query.nodes.split(',');
-        }
-        if (req.query.features_of_interest) {
-            req.query.features_of_interest = req.query.features_of_interest.split(',');
-        }
-        if (req.query.sensors) {
-            req.query.sensors = req.query.sensors.split(',');
-        }
-        if ((!req.query.nodes || (req.query.nodes && req.query.nodes.every(function (n) {
-                return (nodes.indexOf(n) >= 0)
-            })))
-            && (!req.query.features_of_interest || (req.query.features_of_interest && req.query.features_of_interest.every(function (f) {
-                return (features.indexOf(f) >= 0)
-            })))
-            && (!req.query.sensors || (req.query.sensors && req.query.sensors.every(function (s) {
-                return (sensors.indexOf(s) >= 0)
-            })))) {
-            res.json({data: []});
+    app.get('/v1/api/sensor-networks/array_of_things/:field/:value', function (req, res) {
+        if ((req.params.field == 'nodes' && (nodes.indexOf(req.params.value) >= 0)) ||
+            (req.params.field == 'features' && (features.indexOf(req.params.value) >= 0)) ||
+            (req.params.field == 'sensors' && (sensors.indexOf(req.params.value) >= 0))) {
+            res.json({});
         }
         else {
             res.json({error: "Validation error!"});
@@ -75,7 +60,7 @@ exports.send_receive_data = function (test) {
         test.ok(false);
     });
     var data2 = [];
-    var socket2 = require('socket.io-client')('http://localhost:8081?features_of_interest=Temperature,Relative_Humidity');
+    var socket2 = require('socket.io-client')('http://localhost:8081?features=Temperature,Relative_Humidity');
     socket2.on('data', function (data) {
         data2.push(data);
     });
@@ -93,7 +78,7 @@ exports.send_receive_data = function (test) {
         test.ok(false);
     });
     var data4 = [];
-    var socket4 = require('socket.io-client')('http://localhost:8081?nodes=001&features_of_interest=temperature&sensors=tmp112');
+    var socket4 = require('socket.io-client')('http://localhost:8081?nodes=001&features=temperature&sensors=tmp112');
     socket4.on('data', function (data) {
         data4.push(data);
     });
@@ -117,7 +102,7 @@ exports.send_receive_data = function (test) {
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "oss33",
-        "feature_of_interest": "magnetic_field",
+        "feature": "magnetic_field",
         "results": {
             x: 4.3,
             y: 2.3,
@@ -129,7 +114,7 @@ exports.send_receive_data = function (test) {
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "oss33",
-        "feature_of_interest": "magnetic_field",
+        "feature": "magnetic_field",
         "results": {
             x: 4.3,
             y: 2.3,
@@ -141,7 +126,7 @@ exports.send_receive_data = function (test) {
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "yuu99",
-        "feature_of_interest": "temperature",
+        "feature": "temperature",
         "results": {
             temperature: 89.02
         }
@@ -151,7 +136,7 @@ exports.send_receive_data = function (test) {
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "yuu99",
-        "feature_of_interest": "relative_humidity",
+        "feature": "relative_humidity",
         "results": {
             humidity: 33.65
         }
@@ -161,7 +146,7 @@ exports.send_receive_data = function (test) {
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "htu21d",
-        "feature_of_interest": "relative_humidity",
+        "feature": "relative_humidity",
         "results": {
             humidity: 31.67
         }
@@ -171,7 +156,7 @@ exports.send_receive_data = function (test) {
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "htu21d",
-        "feature_of_interest": "temperature",
+        "feature": "temperature",
         "results": {
             temperature: 77.54
         }
@@ -181,7 +166,7 @@ exports.send_receive_data = function (test) {
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "tmp112",
-        "feature_of_interest": "temperature",
+        "feature": "temperature",
         "results": {
             temperature: 99.72
         }
@@ -191,7 +176,7 @@ exports.send_receive_data = function (test) {
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "tmp112",
-        "feature_of_interest": "temperature",
+        "feature": "temperature",
         "results": {
             temperature: 57.8
         }
@@ -202,7 +187,7 @@ exports.send_receive_data = function (test) {
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "oss33",
-        "feature_of_interest": "magnetic_field",
+        "feature": "magnetic_field",
         "results": {
             x: 4.3,
             y: 2.3,

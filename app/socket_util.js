@@ -54,7 +54,51 @@ var parse_args = function (socket) {
  */
 var validate_args = function (args) {
     var p = new Promise(function (fulfill, reject) {
-        http.get(validation_query(args), function (response) {
+        var nodes = null;
+        if (args.nodes) {
+            nodes = args.nodes;
+        }
+        validate_field(args.sensor_network, 'nodes', nodes).then(function () {
+            var features = null;
+            if (args.features) {
+                features = args.features;
+            }
+            validate_field(args.sensor_network, 'features', features).then(function () {
+                var sensors = null;
+                if (args.sensors) {
+                    sensors = args.sensors;
+                }
+                validate_field(args.sensor_network, 'sensors', sensors).then(function () {
+                    fulfill({})
+                }, function () {
+                    reject(err)
+                })
+            }, function () {
+                reject(err)
+            })
+        }, function (err) {
+            reject(err)
+        })
+    });
+    return p
+};
+
+/**
+ * recursively validate all values in a given field
+ *
+ * @param: {String} sensor_network
+ * @param: {String} field
+ * @param: {Array} values
+ */
+var validate_field = function (sensor_network, field, values) {
+    if (!values) {
+        var p = new Promise(function (fulfill, reject) {
+            fulfill({});
+        });
+        return p
+    }
+    var p = new Promise(function (fulfill, reject) {
+        http.get(field_query(sensor_network, field, values[0]), function (response) {
             var output = '';
             response.on('data', function (data) {
                 output += data;
@@ -67,7 +111,17 @@ var validate_args = function (args) {
                         reject({error: JSON.parse(output).error});
                     }
                     else {
-                        fulfill(output);
+                        if (values.length == 1) {
+                            fulfill(output);
+                        }
+                        else {
+                            values.splice(0, 1);
+                            validate_field(sensor_network, field, values).then(function (output) {
+                                fulfill(output)
+                            }, function (err) {
+                                reject(err);
+                            });
+                        }
                     }
                 }
                 catch (err) {
@@ -80,18 +134,15 @@ var validate_args = function (args) {
 };
 
 /**
- * generate validation query for query API
+ * generate validation query for metadata API
  *
- * @param: {Object} args
+ * @param: {String} sensor_network
+ * @param: {String} field
+ * @param: {String} sensor
  */
-var validation_query = function (args) {
-    var validation_query = util.format('http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/%s/query?limit=0', args.sensor_network);
-    Object.keys(args).forEach(function (key) {
-        if (key != 'sensor_network') {
-            validation_query += '&' + key + '=' + args[key]
-        }
-    });
-    return validation_query
+var field_query = function (sensor_network, field, value) {
+    var field_query = util.format('http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/%s/%s/%s', sensor_network, field, value);
+    return field_query
 };
 
 /**
@@ -103,7 +154,7 @@ var validation_query = function (args) {
 var valid_data = function(data, room_name) {
     var room_args = JSON.parse(room_name);
     return (((!room_args.nodes) || (room_args.nodes.indexOf(data.node_id) >= 0)) &&
-    ((!room_args.features_of_interest) || (room_args.features_of_interest.indexOf(data.feature_of_interest) >= 0)) &&
+    ((!room_args.features) || (room_args.features.indexOf(data.feature) >= 0)) &&
     ((!room_args.sensors) || (room_args.sensors.indexOf(data.sensor) >= 0)))
 };
 
@@ -118,11 +169,11 @@ var log_performance = function (socket_count) {
             freemem: os.freemem(),
             sockets: socket_count,
             time: Date.now()
-        }) + os.EOL)
+        }) + ',' + os.EOL)
 };
 
 module.exports.parse_args = parse_args;
 module.exports.validate_args = validate_args;
+module.exports.field_query = field_query;
 module.exports.log_performance = log_performance;
-module.exports.validation_query = validation_query;
 module.exports.valid_data = valid_data;
