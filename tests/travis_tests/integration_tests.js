@@ -98,7 +98,7 @@ exports.send_receive_data = function (test) {
 
     // emit data to socket server
     mapper.emit('internal_data', {
-        "node_id": "001",
+        "node": "001",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "oss33",
@@ -110,7 +110,7 @@ exports.send_receive_data = function (test) {
         }
     });
     mapper.emit('internal_data', {
-        "node_id": "002",
+        "node": "002",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "oss33",
@@ -122,7 +122,7 @@ exports.send_receive_data = function (test) {
         }
     });
     mapper.emit('internal_data', {
-        "node_id": "003",
+        "node": "003",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "yuu99",
@@ -132,7 +132,7 @@ exports.send_receive_data = function (test) {
         }
     });
     mapper.emit('internal_data', {
-        "node_id": "003",
+        "node": "003",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "yuu99",
@@ -142,7 +142,7 @@ exports.send_receive_data = function (test) {
         }
     });
     mapper.emit('internal_data', {
-        "node_id": "003",
+        "node": "003",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "htu21d",
@@ -152,7 +152,7 @@ exports.send_receive_data = function (test) {
         }
     });
     mapper.emit('internal_data', {
-        "node_id": "003",
+        "node": "003",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "htu21d",
@@ -162,7 +162,7 @@ exports.send_receive_data = function (test) {
         }
     });
     mapper.emit('internal_data', {
-        "node_id": "003",
+        "node": "003",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "tmp112",
@@ -172,7 +172,7 @@ exports.send_receive_data = function (test) {
         }
     });
     mapper.emit('internal_data', {
-        "node_id": "001",
+        "node": "001",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "tmp112",
@@ -183,7 +183,7 @@ exports.send_receive_data = function (test) {
     });
     // nobody should receive this
     mapper.emit('internal_data', {
-        "node_id": "004",
+        "node": "004",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "oss33",

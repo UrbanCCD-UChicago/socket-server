@@ -153,7 +153,7 @@ var field_query = function (sensor_network, field, value) {
  */
 var valid_data = function(data, room_name) {
     var room_args = JSON.parse(room_name);
-    return (((!room_args.nodes) || (room_args.nodes.indexOf(data.node_id) >= 0)) &&
+    return (((!room_args.nodes) || (room_args.nodes.indexOf(data.node) >= 0)) &&
     ((!room_args.features) || (room_args.features.indexOf(data.feature) >= 0)) &&
     ((!room_args.sensors) || (room_args.sensors.indexOf(data.sensor) >= 0)))
 };

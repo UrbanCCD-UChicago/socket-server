@@ -86,7 +86,7 @@ exports.filter_data = function (test) {
 
     // correct
     var data1 = {
-        "node_id": "000",
+        "node": "000",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "htu21d",
@@ -97,7 +97,7 @@ exports.filter_data = function (test) {
     };
     // bad FoI
     var data2 = {
-        "node_id": "000",
+        "node": "000",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "htu21d",
@@ -108,7 +108,7 @@ exports.filter_data = function (test) {
     };
     // bad node
     var data3 = {
-        "node_id": "00C",
+        "node": "00C",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "htu21d",
@@ -119,7 +119,7 @@ exports.filter_data = function (test) {
     };
     // bad sensor
     var data4 = {
-        "node_id": "02B",
+        "node": "02B",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
         "sensor": "tgr67",
