@@ -34,12 +34,20 @@ io.on('connect', function (socket) {
     }
     else block: {
         try {
-            var args = socket_util.parse_args(socket)
+            var args = socket_util.parse_args(socket.handshake.query)
         }
         catch (err) {
             socket.emit('internal_error', {error: 'Could not parse query args. ' + err});
             socket.disconnect();
             break block
+        }
+        if (!(socket.handshake.query.sensor_network)) {
+            socket.emit('internal_error', {error: 'You must specify a network'});
+            socket.disconnect();
+            break block
+        }
+        else {
+            args.sensor_network = socket.handshake.query.sensor_network
         }
         var room_name = JSON.stringify(args);
         increment_room(room_name);

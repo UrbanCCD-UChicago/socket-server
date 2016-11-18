@@ -9,21 +9,12 @@
 var socket_util = require('../../app/socket_util');
 var _ = require('underscore');
 
-// default should be everything from array_of_things
-exports.parse_empty_args = function (test) {
-    var socket = {handshake: {query: {}}};
-    var args = socket_util.parse_args(socket);
-
-    test.ok(_.isEqual(args, {sensor_network: 'array_of_things'}));
-    test.done();
-};
-
 // accounts for various query arg formats coming from Python and Node.js clients
 exports.parse_args = function (test) {
     var socket1 = {
         handshake: {
             query: {
-                sensor_network: 'array_of_things',
+                network: 'array_of_things',
                 sensors: '[htu21d]',
                 features: '[temperature,relative_humidity]',
                 nodes: '[000,02B,011]'
@@ -34,7 +25,7 @@ exports.parse_args = function (test) {
     var socket2 = {
         handshake: {
             query: {
-                sensor_network: 'array_of_things',
+                network: 'array_of_things',
                 sensors: 'htu21d',
                 features: 'temperature,relative_humidity',
                 nodes: '000,02B,011'
@@ -45,7 +36,7 @@ exports.parse_args = function (test) {
     var socket3 = {
         handshake: {
             query: {
-                sensor_network: 'array_of_things',
+                network: 'array_of_things',
                 sensors: ['htu21d'],
                 features: ['temperature', 'relative_humidity'],
                 nodes: ['000', '02B', '011']
@@ -55,7 +46,7 @@ exports.parse_args = function (test) {
     var args3 = socket_util.parse_args(socket3);
 
     var correct_args = {
-        sensor_network: 'array_of_things',
+        network: 'array_of_things',
         sensors: ['htu21d'],
         features: ['temperature', 'relative_humidity'],
         nodes: ['000', '02b', '011']
@@ -71,13 +62,15 @@ exports.parse_args = function (test) {
 exports.field_query = function (test) {
     test.equal(socket_util.field_query('array_of_things', 'nodes', '011'),
         'http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/array_of_things/nodes/011');
+    test.equal(socket_util.field_query('array_of_things', 'nodes', '011'),
+        'http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/array_of_things/nodes/011');
     test.done();
 };
 
 // check that data is being correctly filtered to be sent to rooms
 exports.filter_data = function (test) {
     var args = {
-        sensor_network: 'array_of_things',
+        network: 'array_of_things',
         sensors: ['htu21d'],
         features: ['temperature', 'relative_humidity'],
         nodes: ['000', '02B', '011']

@@ -9,45 +9,34 @@ var fs = require('fs');
  * take in client arguments from query.args in the initial handshake
  * generate a formatted dictionary of arguments for data filtering
  *
- * @param {socket} socket
+ * @param {Object} input_args = socket.handshake.query
  * @return {Object} args
  */
-var parse_args = function (socket) {
+var parse_args = function (input_args) {
     var args = {};
-    var q = socket.handshake.query;
-    Object.keys(q).forEach(function (key) {
+    Object.keys(input_args).forEach(function (key) {
         if (key != 'EIO' && key != 'b64' && key != 't' && key != 'transport') {
-            if (typeof q[key] == 'object') {
-                args[key] = q[key].toString().toLowerCase().split(',');
+            if (typeof input_args[key] == 'object') {
+                args[key] = input_args[key].toString().toLowerCase().split(',');
             }
             else {
                 try {
-                    args[key] = JSON.parse(q[key]).toString().toLowerCase().split(',');
+                    args[key] = JSON.parse(input_args[key]).toString().toLowerCase().split(',');
                 }
                 catch (err) {
-                    q[key] = q[key].toLowerCase();
-                    q[key] = q[key].replace('[','');
-                    q[key] = q[key].replace(']','');
-                    args[key] = q[key].split(',');
+                    input_args[key] = input_args[key].toLowerCase();
+                    input_args[key] = input_args[key].replace('[','');
+                    input_args[key] = input_args[key].replace(']','');
+                    args[key] = input_args[key].split(',');
                 }
             }
         }
     });
-    // if user doesn't pass any args, or doesn't pass a sensor_network arg,
-    // stream them everything from ObservationStream.
-    // since ObservationStream is assumed to carry only AoT data,
-    // setting the sensor_network does not filter streaming results - it is only used in validation
-    if (!(socket.handshake.query.sensor_network)) {
-        args.sensor_network = 'array_of_things'
-    }
-    else {
-        args.sensor_network = socket.handshake.query.sensor_network
-    }
     return args
 };
 
 /**
- * send a GET request to the query API that will return no data, but will identify validation errors
+ * sends GET requests to the query API that will return no data, but will identify validation errors
  *
  * @param {Object} args
  * @return {Promise} p yields empty query return on fulfillment, yields parsing errors on rejection
