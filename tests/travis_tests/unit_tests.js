@@ -1,10 +1,12 @@
 /**
  * to run these tests:
- * 
+ *
  * $ npm install nodeunit -g
  *
  * $ nodeunit unit_tests.js
  */
+
+// TODO: add failure tests
 
 var socket_util = require('../../app/socket_util');
 var _ = require('underscore');
@@ -21,7 +23,7 @@ exports.parse_args = function (test) {
             }
         }
     };
-    var args1 = socket_util.parse_args(socket1);
+    var args1 = socket_util.parse_args(socket1.handshake.query);
     var socket2 = {
         handshake: {
             query: {
@@ -32,7 +34,7 @@ exports.parse_args = function (test) {
             }
         }
     };
-    var args2 = socket_util.parse_args(socket2);
+    var args2 = socket_util.parse_args(socket2.handshake.query);
     var socket3 = {
         handshake: {
             query: {
@@ -43,7 +45,7 @@ exports.parse_args = function (test) {
             }
         }
     };
-    var args3 = socket_util.parse_args(socket3);
+    var args3 = socket_util.parse_args(socket3.handshake.query);
 
     var correct_args = {
         network: 'array_of_things',
@@ -59,11 +61,17 @@ exports.parse_args = function (test) {
 };
 
 // check that validation query is generated correctly
-exports.field_query = function (test) {
-    test.equal(socket_util.field_query('array_of_things', 'nodes', '011'),
-        'http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/array_of_things/nodes/011');
-    test.equal(socket_util.field_query('array_of_things', 'nodes', '011'),
-        'http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/array_of_things/nodes/011');
+exports.check_query = function (test) {
+    var args = {
+        network: 'array_of_things',
+        sensors: ['htu21d'],
+        features: ['temperature', 'relative_humidity'],
+        nodes: ['000', '02B', '011']
+    };
+
+    test.equal(socket_util.check_query(args),
+        'http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/array_of_things/check?' +
+        '&sensors=htu21d&features=temperature,relative_humidity&nodes=000,02B,011');
     test.done();
 };
 
@@ -79,6 +87,7 @@ exports.filter_data = function (test) {
 
     // correct
     var data1 = {
+        "network": "array_of_things",
         "node_id": "000",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
@@ -88,8 +97,21 @@ exports.filter_data = function (test) {
             temperature: 37.90
         }
     };
-    // bad FoI
+    // bad network
     var data2 = {
+        "network": "internet_of_stuff",
+        "node_id": "000",
+        "node_config": "39",
+        "datetime": "2016-08-05T00:00:08.246000",
+        "sensor": "htu21d",
+        "feature": "atmospheric_pressure",
+        "results": {
+            pressure: 80.29
+        }
+    };
+    // bad FoI
+    var data3 = {
+        "network": "array_of_things",
         "node_id": "000",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
@@ -100,7 +122,8 @@ exports.filter_data = function (test) {
         }
     };
     // bad node
-    var data3 = {
+    var data4 = {
+        "network": "array_of_things",
         "node_id": "00C",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
@@ -111,7 +134,8 @@ exports.filter_data = function (test) {
         }
     };
     // bad sensor
-    var data4 = {
+    var data5 = {
+        "network": "array_of_things",
         "node_id": "02B",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
@@ -126,5 +150,6 @@ exports.filter_data = function (test) {
     test.ok(!socket_util.valid_data(data2, room_name));
     test.ok(!socket_util.valid_data(data3, room_name));
     test.ok(!socket_util.valid_data(data4, room_name));
+    test.ok(!socket_util.valid_data(data5, room_name));
     test.done();
 };

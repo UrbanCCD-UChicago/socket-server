@@ -13,9 +13,9 @@ var fs = require('fs');
  * @return {Object} args
  */
 var parse_args = function (input_args) {
-    var args = {};
+    var args = {network: input_args.network.toLowerCase()};
     Object.keys(input_args).forEach(function (key) {
-        if (key != 'EIO' && key != 'b64' && key != 't' && key != 'transport') {
+        if (key != 'EIO' && key != 'b64' && key != 't' && key != 'transport'  && key != 'network') {
             if (typeof input_args[key] == 'object') {
                 args[key] = input_args[key].toString().toLowerCase().split(',');
             }
@@ -36,58 +36,13 @@ var parse_args = function (input_args) {
 };
 
 /**
- * sends GET requests to the query API that will return no data, but will identify validation errors
+ * validate all user parameters
  *
- * @param {Object} args
- * @return {Promise} p yields empty query return on fulfillment, yields parsing errors on rejection
+ * @param: {Object} args
  */
 var validate_args = function (args) {
     var p = new Promise(function (fulfill, reject) {
-        var nodes = null;
-        if (args.nodes) {
-            nodes = args.nodes;
-        }
-        validate_field(args.sensor_network, 'nodes', nodes).then(function () {
-            var features = null;
-            if (args.features) {
-                features = args.features;
-            }
-            validate_field(args.sensor_network, 'features', features).then(function () {
-                var sensors = null;
-                if (args.sensors) {
-                    sensors = args.sensors;
-                }
-                validate_field(args.sensor_network, 'sensors', sensors).then(function () {
-                    fulfill({})
-                }, function () {
-                    reject(err)
-                })
-            }, function () {
-                reject(err)
-            })
-        }, function (err) {
-            reject(err)
-        })
-    });
-    return p
-};
-
-/**
- * recursively validate all values in a given field
- *
- * @param: {String} sensor_network
- * @param: {String} field
- * @param: {Array} values
- */
-var validate_field = function (sensor_network, field, values) {
-    if (!values) {
-        var p = new Promise(function (fulfill, reject) {
-            fulfill({});
-        });
-        return p
-    }
-    var p = new Promise(function (fulfill, reject) {
-        http.get(field_query(sensor_network, field, values[0]), function (response) {
+        http.get(check_query(args), function (response) {
             var output = '';
             response.on('data', function (data) {
                 output += data;
@@ -96,21 +51,19 @@ var validate_field = function (sensor_network, field, values) {
                 // if the plenar.io query API throws an error,
                 // JSON.parse will try to parse the html error page and fail
                 try {
-                    if (JSON.parse(output).error) {
-                        reject({error: JSON.parse(output).error});
+                    output = JSON.parse(output);
+                    if (output.error) {
+                        reject({error: output.error});
                     }
                     else {
-                        if (values.length == 1) {
-                            fulfill(output);
+                        // check if all input values are in the returned metadata JSON
+                        for (var i = 0; i < output.data.length; i++){
+                            if (output.data[i].invalid.length > 0) {
+                                reject({error: 'Invalid ' + output.data[i].field +
+                                               ' name(s): ' + output.data[i].invalid})
+                            }
                         }
-                        else {
-                            values.splice(0, 1);
-                            validate_field(sensor_network, field, values).then(function (output) {
-                                fulfill(output)
-                            }, function (err) {
-                                reject(err);
-                            });
-                        }
+                        fulfill({});
                     }
                 }
                 catch (err) {
@@ -123,15 +76,18 @@ var validate_field = function (sensor_network, field, values) {
 };
 
 /**
- * generate validation query for metadata API
+ * generate validation query for /check endpoint
  *
- * @param: {String} sensor_network
- * @param: {String} field
- * @param: {String} sensor
+ * @param: {Object} formatted user args
  */
-var field_query = function (sensor_network, field, value) {
-    var field_query = util.format('http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/%s/%s/%s', sensor_network, field, value);
-    return field_query
+var check_query = function (args) {
+    var query = util.format('http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/%s/check?', args.network);
+    Object.keys(args).forEach(function (key) {
+        if (key != 'network') {
+            query += '&' + key + '=' + args[key].toString();
+        }
+    });
+    return query
 };
 
 /**
@@ -142,7 +98,8 @@ var field_query = function (sensor_network, field, value) {
  */
 var valid_data = function(data, room_name) {
     var room_args = JSON.parse(room_name);
-    return (((!room_args.nodes) || (room_args.nodes.indexOf(data.node_id) >= 0)) &&
+    return (room_args.network == data.network &&
+    ((!room_args.nodes) || (room_args.nodes.indexOf(data.node_id) >= 0)) &&
     ((!room_args.features) || (room_args.features.indexOf(data.feature) >= 0)) &&
     ((!room_args.sensors) || (room_args.sensors.indexOf(data.sensor) >= 0)))
 };
@@ -163,6 +120,6 @@ var log_performance = function (socket_count) {
 
 module.exports.parse_args = parse_args;
 module.exports.validate_args = validate_args;
-module.exports.field_query = field_query;
+module.exports.check_query = check_query;
 module.exports.log_performance = log_performance;
 module.exports.valid_data = valid_data;

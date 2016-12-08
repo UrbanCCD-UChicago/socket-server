@@ -22,7 +22,8 @@ var index = require('../../app/index');
 // the whole shabang - the complete rigmarole - tip to tail - soup to nuts
 exports.send_receive_data = function (test) {
     // connect mock mapper to localhost:8081
-    var mapper = require('socket.io-client')('http://localhost:8081/', {query: 'consumer_token=' + process.env.CONSUMER_TOKEN});
+    var mapper = require('socket.io-client')('http://localhost:8081/',
+        {query: 'consumer_token=' + process.env.CONSUMER_TOKEN});
 
     var http = require('http');
     var express = require('express');
@@ -35,14 +36,54 @@ exports.send_receive_data = function (test) {
     plenario_server.listen(8080);
 
     // if user passes invalid nodes, features, or sensors, return error
-    var nodes = ['001', '002', '003'];
-    var features = ['temperature', 'relative_humidity', 'magnetic_field'];
-    var sensors = ['oss33', 'yuu99', 'htu21d', 'tmp112'];
-    app.get('/v1/api/sensor-networks/array_of_things/:field/:value', function (req, res) {
-        if ((req.params.field == 'nodes' && (nodes.indexOf(req.params.value) >= 0)) ||
-            (req.params.field == 'features' && (features.indexOf(req.params.value) >= 0)) ||
-            (req.params.field == 'sensors' && (sensors.indexOf(req.params.value) >= 0))) {
-            res.json({});
+    var networks = [
+        "array_of_things",
+        "internet_of_stuff"
+    ];
+    var nodes = {
+        array_of_things: ['001', '002', '003'],
+        internet_of_stuff: ['bb8']
+    };
+    var features = {
+        array_of_things: ['temperature', 'relative_humidity', 'magnetic_field'],
+        internet_of_stuff: ['temperature']
+    };
+    var sensors = {
+        array_of_things: ['oss33', 'yuu99', 'htu21d', 'tmp112'],
+        internet_of_stuff: ['tmp113']
+    };
+    app.get('/v1/api/sensor-networks/:network/check', function (req, res) {
+        var network = req.params.network.toLowerCase();
+        if (networks.indexOf(network) >= 0 &&
+            (req.query.nodes == undefined ||
+            req.query.nodes.toLowerCase().split(',').every(function (node) {
+                return nodes[network].indexOf(node) >= 0
+            })) &&
+            (req.query.features == undefined ||
+            req.query.features.toLowerCase().split(',').every(function (feature) {
+                return features[network].indexOf(feature) >= 0
+            })) &&
+            (req.query.sensors == undefined ||
+            req.query.sensors.toLowerCase().split(',').every(function (sensor) {
+                return sensors[network].indexOf(sensor) >= 0
+            }))) {
+            // just needs to return an empty array of invalid objects for each field
+            res.json({
+                data: [
+                    {
+                        field: "nodes",
+                        invalid: []
+                    },
+                    {
+                        field: "features",
+                        invalid: []
+                    },
+                    {
+                        field: "sensors",
+                        invalid: []
+                    }
+                ]
+            });
         }
         else {
             res.json({error: "Validation error!"});
@@ -51,7 +92,9 @@ exports.send_receive_data = function (test) {
 
     // all client args should be case insensitive
     var data1 = [];
-    var socket1 = require('socket.io-client')('http://localhost:8081?nodes=001,002');
+    var socket1 = require('socket.io-client')('http://localhost:8081?' +
+        'network=array_of_things&' +
+        'nodes=001,002');
     socket1.on('data', function (data) {
         data1.push(data);
     });
@@ -60,7 +103,9 @@ exports.send_receive_data = function (test) {
         test.ok(false);
     });
     var data2 = [];
-    var socket2 = require('socket.io-client')('http://localhost:8081?features=Temperature,Relative_Humidity');
+    var socket2 = require('socket.io-client')('http://localhost:8081?' +
+        'network=array_of_things&' +
+        'features=Temperature,Relative_Humidity');
     socket2.on('data', function (data) {
         data2.push(data);
     });
@@ -69,7 +114,9 @@ exports.send_receive_data = function (test) {
         test.ok(false);
     });
     var data3 = [];
-    var socket3 = require('socket.io-client')('http://localhost:8081?sensors=TMP112,HTU21D');
+    var socket3 = require('socket.io-client')('http://localhost:8081?' +
+        'network=array_of_things&' +
+        'sensors=TMP112,HTU21D');
     socket3.on('data', function (data) {
         data3.push(data);
     });
@@ -78,7 +125,10 @@ exports.send_receive_data = function (test) {
         test.ok(false);
     });
     var data4 = [];
-    var socket4 = require('socket.io-client')('http://localhost:8081?nodes=001&features=temperature&sensors=tmp112');
+    var socket4 = require('socket.io-client')('http://localhost:8081?' +
+        'network=array_of_things&' +
+        'nodes=001&' +
+        'features=temperature&sensors=tmp112');
     socket4.on('data', function (data) {
         data4.push(data);
     });
@@ -87,17 +137,20 @@ exports.send_receive_data = function (test) {
         test.ok(false);
     });
     // should receive an internal_error due to invalid node ID
-    var internal_error = false;
-    var socket5 = require('socket.io-client')('http://localhost:8081?nodes=bad_node');
+    var internal_error5 = false;
+    var socket5 = require('socket.io-client')('http://localhost:8081?' +
+        'network=array_of_things&' +
+        'nodes=bad_node');
     socket5.on('data', function (data) {
         test.ok(false)
     });
     socket5.on('internal_error', function (err) {
-        internal_error = true;
+        internal_error5 = true;
     });
 
     // emit data to socket server
     mapper.emit('internal_data', {
+        "network": "array_of_things",
         "node_id": "001",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
@@ -110,6 +163,7 @@ exports.send_receive_data = function (test) {
         }
     });
     mapper.emit('internal_data', {
+        "network": "array_of_things",
         "node_id": "002",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
@@ -122,6 +176,7 @@ exports.send_receive_data = function (test) {
         }
     });
     mapper.emit('internal_data', {
+        "network": "array_of_things",
         "node_id": "003",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
@@ -132,6 +187,7 @@ exports.send_receive_data = function (test) {
         }
     });
     mapper.emit('internal_data', {
+        "network": "array_of_things",
         "node_id": "003",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
@@ -142,6 +198,7 @@ exports.send_receive_data = function (test) {
         }
     });
     mapper.emit('internal_data', {
+        "network": "array_of_things",
         "node_id": "003",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
@@ -152,6 +209,7 @@ exports.send_receive_data = function (test) {
         }
     });
     mapper.emit('internal_data', {
+        "network": "array_of_things",
         "node_id": "003",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
@@ -162,6 +220,7 @@ exports.send_receive_data = function (test) {
         }
     });
     mapper.emit('internal_data', {
+        "network": "array_of_things",
         "node_id": "003",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
@@ -172,6 +231,7 @@ exports.send_receive_data = function (test) {
         }
     });
     mapper.emit('internal_data', {
+        "network": "array_of_things",
         "node_id": "001",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
@@ -183,6 +243,7 @@ exports.send_receive_data = function (test) {
     });
     // nobody should receive this
     mapper.emit('internal_data', {
+        "network": "array_of_things",
         "node_id": "004",
         "node_config": "34",
         "datetime": "2016-08-05T00:00:08.246000",
@@ -200,7 +261,7 @@ exports.send_receive_data = function (test) {
         test.equals(data2.length, 6);
         test.equals(data3.length, 4);
         test.equals(data4.length, 1);
-        test.ok(internal_error);
+        test.ok(internal_error5);
         test.done();
     }, 3000);
 };
