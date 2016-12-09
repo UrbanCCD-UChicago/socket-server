@@ -146,7 +146,7 @@ exports.filter_data = function (test) {
         }
     };
 
-    test.ok(socket_util.valid_data(data1, room_name));
+    test.ok( socket_util.valid_data(data1, room_name));
     test.ok(!socket_util.valid_data(data2, room_name));
     test.ok(!socket_util.valid_data(data3, room_name));
     test.ok(!socket_util.valid_data(data4, room_name));

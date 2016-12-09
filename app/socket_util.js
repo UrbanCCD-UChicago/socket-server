@@ -48,10 +48,11 @@ var validate_args = function (args) {
                 output += data;
             });
             response.on('end', function () {
-                // if the plenar.io query API throws an error,
+                // if the plenar.io query API throws an error for some reason,
                 // JSON.parse will try to parse the html error page and fail
                 try {
                     output = JSON.parse(output);
+                    // this happens when an invalid network is provided to /check
                     if (output.error) {
                         reject({error: output.error});
                     }
@@ -67,7 +68,7 @@ var validate_args = function (args) {
                     }
                 }
                 catch (err) {
-                    reject({error: 'Error parsing validation query return. ' + err});
+                    reject({error: 'Internal error parsing validation query return from plenar.io ' + err});
                 }
             });
         });
