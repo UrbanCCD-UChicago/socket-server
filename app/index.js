@@ -33,8 +33,13 @@ io.on('connect', function (socket) {
         }
     }
     else block: {
+        if (!(socket.handshake.query.network)) {
+            socket.emit('internal_error', {error: 'You must specify a network.'});
+            socket.disconnect();
+            break block
+        }
         try {
-            var args = socket_util.parse_args(socket)
+            var args = socket_util.parse_args(socket.handshake.query)
         }
         catch (err) {
             socket.emit('internal_error', {error: 'Could not parse query args. ' + err});
