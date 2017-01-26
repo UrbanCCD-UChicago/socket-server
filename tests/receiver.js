@@ -5,10 +5,7 @@
 
 var io = require('socket.io-client');
 
-var socket = io.connect('http://localhost:8081?sensor_network=plenario_development&' +
-    'nodes=node_dev_1,node_dev_2&' +
-    'sensors=sensor_dev_1,sensor_dev_2,sensor_dev_3,sensor_dev_4&' +
-    'features=magnetic_field,gas_concentration,temperature,relative_humidity');
+var socket = io.connect('http://streaming.plenar.io?network=plenario_development');
 
 socket.on('data', function (data) {
     console.log(data);
