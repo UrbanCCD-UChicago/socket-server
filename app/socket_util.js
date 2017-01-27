@@ -3,6 +3,21 @@ var http = require('http');
 var os = require('os');
 var fs = require('fs');
 
+
+/**
+ * Encode an object to a URI string of query parameters.
+ *
+ * @param: {Object} o
+ */
+function encode(o) {
+  var str = [];
+  for (var p in o)
+    if (o.hasOwnProperty(p))
+      str.push(encodeURIComponent(p) + "=" + encodeURIComponent(o[p]));
+  return str.join("&");
+}
+
+
 // TODO: check that this function parses args from Java clients correctly
 // it works for Node.js and Python
 /**
@@ -42,68 +57,19 @@ var parse_args = function (input_args) {
  */
 var validate_args = function (args) {
     var p = new Promise(function (fulfill, reject) {
-        http.get(check_query(args), function (response) {
-            var output = '';
-            response.on('data', function (data) {
-                output += data;
-            });
-            response.on('end', function () {
-                // if the plenar.io query API throws an error for some reason,
-                // JSON.parse will try to parse the html error page and fail
-                try {
-                    output = JSON.parse(output);
-                    // this happens when an invalid network is provided to /check
-                    if (output.error) {
-                        reject({error: output.error});
-                    }
-                    else {
-                        // check if all input values are in the returned metadata JSON
-                        for (var i = 0; i < output.data.length; i++){
-                            if (output.data[i].invalid.length > 0) {
-                                reject({error: 'Invalid ' + output.data[i].field +
-                                               ' name(s): ' + output.data[i].invalid})
-                            }
-                        }
-                        fulfill({});
-                    }
-                }
-                catch (err) {
-                    reject({error: 'Internal error parsing validation query return from plenar.io ' + err});
-                }
-            });
-        });
+        var host = 'http://' + process.env.PLENARIO_HOST;
+        // var request = host + encode(args);
+        // http.get(request, function (response) {
+        //     if (response.statusCode === 200)
+        //         fulfill();
+        //     // todo: make this more informative
+        //     reject('You have specified invalid query parameters.');
+        // });
+        fulfill();
     });
     return p
 };
 
-/**
- * generate validation query for /check endpoint
- *
- * @param: {Object} formatted user args
- */
-var check_query = function (args) {
-    var query = util.format('http://' + process.env.PLENARIO_HOST + '/v1/api/sensor-networks/%s/check?', args.network);
-    Object.keys(args).forEach(function (key) {
-        if (key != 'network') {
-            query += '&' + key + '=' + args[key].toString();
-        }
-    });
-    return query
-};
-
-/**
- * check if consumer should emit a given data event to a certain room
- *
- * @param: {Object} data
- * @param: {String} room_name = stringified JSON of arguments used to filter data
- */
-var valid_data = function(data, room_name) {
-    var room_args = JSON.parse(room_name);
-    return (room_args.network == data.network &&
-    ((!room_args.nodes) || (room_args.nodes.indexOf(data.node_id) >= 0)) &&
-    ((!room_args.features) || (room_args.features.indexOf(data.feature) >= 0)) &&
-    ((!room_args.sensors) || (room_args.sensors.indexOf(data.sensor) >= 0)))
-};
 
 /**
  * log performance data JSON to file in /var/app/current
@@ -121,6 +87,4 @@ var log_performance = function (socket_count) {
 
 module.exports.parse_args = parse_args;
 module.exports.validate_args = validate_args;
-module.exports.check_query = check_query;
 module.exports.log_performance = log_performance;
-module.exports.valid_data = valid_data;

@@ -1,8 +1,15 @@
 var http = require('http');
 var express = require('express');
-
+var winston = require('winston');
 var socket_util = require('./socket_util');
 
+
+// Configure the logger.
+winston.level = process.env.LOG_LEVEL || "info";
+winston.remove(winston.transports.Console);
+winston.add(winston.transports.Console, {'colorize': true, 'timestamp': true})
+
+// Set up the socket server.
 var app = express();
 var server = http.createServer(app);
 var io = require('socket.io')(server);
@@ -10,21 +17,32 @@ var io = require('socket.io')(server);
 var rooms = {};
 var socket_count = 0;
 
-io.on('connect', function (socket) {
-    // check if the client provides valid consumer authentication
+
+io.on('connection', function (socket) {
+
+    // Check if the current client is the Kinesis consumer.
     if (socket.handshake.query.consumer_token) {
         if (socket.handshake.query.consumer_token == process.env.CONSUMER_TOKEN) {
-            console.log('consumer connected');
-            // pass filtered 'internal_data' messages from consumer app to 'data' messages received by sockets
+            winston.info('Kinesis consumer connected.');
+
+            // Process a published data point coming off the stream from the consumer.
             socket.on('internal_data', function (data) {
                 Object.keys(rooms).forEach(function (room_name) {
-                    if (socket_util.valid_data(data, room_name)) {
-                        io.to(room_name).emit('data', data);
-                    }
+                    room = JSON.parse(room_name);
+
+                    // Ensure data comes with everything required to publish in the current room.
+                    if (room.network != data.network) return;
+                    if (room.features && (room.features.indexOf(data.feature) < 0)) return;
+                    if (room.nodes && (room.nodes.indexOf(data.node) < 0)) return;
+                    if (room.sensors && (room.sensors.indexOf(data.sensor) < 0)) return;
+
+                    winston.info('Data is valid, broadcasting to room ' + rooms[room_name]);
+                    io.to(room_name).emit('data', data);
                 });
             });
+
             socket.on('disconnect', function () {
-                console.log('consumer disconnected')
+                winston.info('Kinesis consumer disconnected.')
             });
         }
         else {
@@ -64,7 +82,7 @@ io.on('connect', function (socket) {
 });
 
 server.listen(8081, function () {
-    console.log("listening for clients on port 80 ==nginx==> 8081");
+    winston.info("listening for clients on port 80 ==nginx==> 8081");
 });
 
 /**
