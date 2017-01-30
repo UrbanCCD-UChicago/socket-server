@@ -57,15 +57,26 @@ var parse_args = function (input_args) {
  */
 var validate_args = function (args) {
     var p = new Promise(function (fulfill, reject) {
+
+        var network = args.network;
+        delete args.network;
+
         var host = 'http://' + process.env.PLENARIO_HOST;
-        // var request = host + encode(args);
-        // http.get(request, function (response) {
-        //     if (response.statusCode === 200)
-        //         fulfill();
-        //     // todo: make this more informative
-        //     reject('You have specified invalid query parameters.');
-        // });
-        fulfill();
+        var checkEndpoint = host + '/v1/api/sensor-networks/' + network + '/check';
+        var request = checkEndpoint + '?' + encode(args);
+
+        http.get(request, function (response) {
+            if (response.statusCode === 200) {
+                fulfill();
+            }
+            
+            var output = '';
+            response.on('data', function(data) { output += data; });
+            response.on('end', function() {
+                var responseMessage = JSON.parse(output);
+                reject(responseMessage);
+            })
+        });
     });
     return p
 };
