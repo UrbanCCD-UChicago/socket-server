@@ -18,8 +18,6 @@ function encode(o) {
 }
 
 
-// TODO: check that this function parses args from Java clients correctly
-// it works for Node.js and Python
 /**
  * take in client arguments from query.args in the initial handshake
  * generate a formatted dictionary of arguments for data filtering
