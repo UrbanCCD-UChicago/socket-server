@@ -1,9 +1,3 @@
-// Configure the logger.
-// winston.level = process.env.LOG_LEVEL || "info";
-// winston.remove(winston.transports.Console);
-// winston.add(winston.transports.Console, {'colorize': true, 'timestamp': true})
-
-
 const _ = require('underscore');
 const REDIS_CHANNEL_NAME = 'plenario_observations';
 
@@ -62,20 +56,23 @@ function _setUpSocketIo(io, treeCache) {
 }
 
 
-
 function shouldSend(args, observation) {
-    // for (let property of ['network', 'feature', 'sensor', 'node']) {
-
-    // }
+    const {metadata: {sensor, node, network}} = observation.attributes;
+    const {observation: feature} = observation.attributes;
+    const {sensors, nodes, networks, features} = args;
+    return  networks.contains(network) &&
+            nodes.contains(node) &&
+            sensors.contains(sensor) &&
+            features.contains(feature);
 }
 
 
 /**
  * 
- * @param {
- * network: string,
- * 
- * } args 
+ * @param {*} rawArgs
+ *  User provided query arguments 
+ * @param {*} tree
+ *  Sensor network metadata in format provided py postgres sensor_tree procedure
  */
 function parseArgs(rawArgs, tree) {
     const args = {};
