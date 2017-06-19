@@ -55,17 +55,12 @@ function _setUpSocketIo(io, treeCache) {
     });
 }
 
-
 function shouldSend(args, observation) {
-    const {metadata: {sensor, node, network}} = observation.attributes;
-    const {observation: feature} = observation.attributes;
+    const {sensor, node, network, feature} = observation.attributes;
     const {sensors, nodes, networks, features} = args;
-    return  networks.contains(network) &&
-            nodes.contains(node) &&
-            sensors.contains(sensor) &&
-            features.contains(feature);
+    const pairs = [[networks, network], [nodes, node], [sensors, sensor], [features, feature]];
+    return pairs.every(([list, individual]) => list.includes(individual));
 }
-
 
 /**
  * 
