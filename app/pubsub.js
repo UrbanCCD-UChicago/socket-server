@@ -3,6 +3,7 @@ const REDIS_CHANNEL_NAME = 'plenario_observations';
 
 exports.setUpRedis = setUpRedis;
 exports.setUpSocketIo = setUpSocketIo;
+exports.parseArgs = parseArgs;
 
 function setUpRedis(redis, io) {
     redis.subscribe(REDIS_CHANNEL_NAME);
@@ -59,7 +60,7 @@ function shouldSend(args, observation) {
     const {sensor, node, network, feature} = observation.attributes;
     const {sensors, nodes, networks, features} = args;
     const pairs = [[networks, network], [nodes, node], [sensors, sensor], [features, feature]];
-    return pairs.every(([list, individual]) => list.includes(individual));
+    return pairs.every(([set, individual]) => set.has(individual));
 }
 
 /**
@@ -76,7 +77,7 @@ function parseArgs(rawArgs, tree) {
         return {err: 'You must specify a sensor network'};
     }
     // For consistency, make networks a list of length one.
-    args.networks = [networkName];
+    args.networks = new Set([networkName]);
 
     const optionalFields = ['nodes', 'sensors', 'features'];
     for (let f of optionalFields) {
@@ -103,6 +104,7 @@ function parseArgs(rawArgs, tree) {
     else {
         args.nodes = _.keys(network);
     }
+    args.nodes = new Set(args.nodes);
     
     const viableSensors = {};
     for (let nodeName of args.nodes) {
@@ -118,6 +120,7 @@ function parseArgs(rawArgs, tree) {
     else {
         args.sensors = _.keys(viableSensors);
     }
+    args.sensors = new Set(args.sensors);
     
     // {sensorName: {beehiveNickame: feature.property}}
     const observedProperties = _.flatten(_.values(viableSensors).map(_.values));
@@ -131,6 +134,7 @@ function parseArgs(rawArgs, tree) {
             return {err: `Features ${formatList(invalidFeatures)} are not reported by sensors ${formatList(args.sensors)}.`}
         }
     }
+    args.features = new Set(args.features);
     return args;
 }
 

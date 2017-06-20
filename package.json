@@ -1,6 +1,6 @@
 {
   "name": "socket-server",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
     "url": "git://github.com/UrbanCCD-UChicago/socket-server.git"
@@ -20,7 +20,9 @@
     "winston": "2.3.1"
   },
   "devDependencies": {
+    "chai": "^4.0.2",
     "exit": "~0.1.2",
+    "mocha": "^3.4.2",
     "nodeunit": "~0.9.4",
     "underscore": "~1.8.3"
   }
