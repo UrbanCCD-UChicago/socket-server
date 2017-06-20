@@ -98,7 +98,7 @@ function parseArgs(rawArgs, tree) {
     if (args.nodes) {
         const invalidNodes = args.nodes.filter(n => !(n in network));
         if (invalidNodes.length > 0) {
-            return {err: `Nodes ${formatList(invalidNodes)} are not in network ${networkName}.`}
+            return {err: `Nodes ${formatSet(invalidNodes)} are not in network ${networkName}.`}
         }
     }
     else {
@@ -114,28 +114,39 @@ function parseArgs(rawArgs, tree) {
     if (args.sensors) {
         const invalidSensors = args.sensors.filter(s => !(s in viableSensors));
         if (invalidSensors.length > 0) {
-            return {err: `Sensors ${formatList(invalidSensors)} are not in nodes ${formatList(args.nodes)}.`}
+            return {err: `Sensors ${formatSet(invalidSensors)} are not in nodes ${formatSet(args.nodes)}.`}
         }
     }
     else {
         args.sensors = _.keys(viableSensors);
     }
+    const trimmedSensors = _.pick(viableSensors, ...args.sensors);
     args.sensors = new Set(args.sensors);
+
     
+    // BUG. I failed to trim the tree here.
     // {sensorName: {beehiveNickame: feature.property}}
-    const observedProperties = _.flatten(_.values(viableSensors).map(_.values));
+    const observedProperties = _.flatten(_.values(trimmedSensors).map(_.values));
     const viableFeatures = [...new Set(observedProperties.map(op => op.split('.')[0]))];
     if (!args.features) {
         args.features = viableFeatures;
     }
     else {
-        const invalidFeatures = args.features.filter(feat => viableFeatures.includes(feat));
+        // console.log(args.features, viableFeatures);
+        const invalidFeatures = args.features.filter(feat => !(viableFeatures.includes(feat)));
         if (invalidFeatures.length > 0) {
-            return {err: `Features ${formatList(invalidFeatures)} are not reported by sensors ${formatList(args.sensors)}.`}
+            return {err: `Features ${formatSet(invalidFeatures)} are not reported by sensors ${formatSet(args.sensors)}.`}
         }
     }
     args.features = new Set(args.features);
     return args;
 }
 
-const formatList = list => list.join(', ');
+function formatSet(setLike) {
+    try {
+        return [...setLike].join(', ');
+    }
+    catch (e) {
+        return '[]';
+    }
+}
