@@ -8,13 +8,13 @@ function setUpRedis(redis, io) {
     redis.subscribe(REDIS_CHANNEL_NAME);
     redis.on('message', (channel, msg) => { 
         const observations = JSON.parse(msg);
+        const sockets = _.values(io.sockets.connected);
         // io.sockets gives the default namespace.
         // namespace.connected gives hash of id to socket for all connected clients.
-        const idSocketPairs = _.pairs(io.sockets.connected);
         for (let o of observations) {
-            const eligiblePairs = idSocketPairs.filter(pair => shouldSend(pair[1].args, o));
-            for (let [id, socket] of eligiblePairs) {
-                socket.to(id).emit('data', o);
+            const eligibleSockets = sockets.filter(s => shouldSend(s.args, o))
+            for (let s of eligibleSockets) {
+                s.emit('data', o);
             }
         }
     });
