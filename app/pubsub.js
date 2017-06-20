@@ -46,7 +46,7 @@ function setUpSocketIo(pg, io) {
 
 function _setUpSocketIo(io, treeCache) {
      io.on('connection', function (socket) {
-        const args = parseArgs(socket.handshake.query.network, treeCache.sensorTree);
+        const args = parseArgs(socket.handshake.query, treeCache.sensorTree);
         if (args.err) {
             socket.emit('internal_error', {error: args.err});
             socket.disconnect();
