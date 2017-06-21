@@ -3,35 +3,7 @@ const {parseArgs} = require('../app/pubsub');
 
 const chai = require('chai');
 const {expect} = chai;
-
-// const tree = {
-//     network1: {
-//         node1: {
-//             sensor1: {
-//                 nickname1: 'temperature.temperature',
-//                 nickname2: 'relative_humidity.humidity'
-//             },
-//             sensor2: {
-//                 nickname1: 'magnetic_field.y',
-//                 nickname2: 'magnetic_field.x',
-//                 nickname3: 'magnetic_field.z'
-//             }
-//         },
-//         node2: {
-//             // Deliberately duplicating
-//             sensor2: {
-//                 nickname1: 'magnetic_field.y',
-//                 nickname2: 'magnetic_field.x',
-//                 nickname3: 'magnetic_field.z'
-//             },
-//             sensor3: {
-//                 nickname1: "atmospheric_pressure.pressure",
-//                 nickname2: "temperature.temperature"
-//             }
-//         }
-//     }
-// };
-
+    
 const tree = {
     network1: {
         node1: {

@@ -172,8 +172,11 @@ function parseArgs(rawArgs, tree) {
         if (invalidKeys.length > 0) {
             return {err: `Could not find selected ${f}: ${invalidKeys.join(',')}`};
         }
-        const trimmed = _.pick(tree, ...keys);
-        tree = _.values(trimmed).reduce((chopped, branch) => Object.assign(chopped, branch), {});
+        // Trim the tree. 
+        // If keys is ['a', 'c'] and tree is {a: {b: 1}, c: {d: 2}, e: {f: 3}}
+        // Chop down to  {b: 1, d: 2}
+        tree = _.values(_.pick(tree, ...keys))
+                .reduce((chopped, branch) => Object.assign(chopped, branch), {});
         validatedArgs[f] = new Set(keys); 
     }
     return validatedArgs;
