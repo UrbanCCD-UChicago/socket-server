@@ -29,41 +29,6 @@ function setUpRedis(redis, io) {
     });
 }
 
-class SensorTreeCache {
-    constructor(pg) {
-        this.pg = pg;
-        setInterval(this._refreshSensorTree.bind(this), 1000*60*10);
-    }
-    // Returns promise to signal that cache has a tree
-    seed() {
-        return this._refreshSensorTree();
-    }
-    _refreshSensorTree() {
-        return this.pg.query('SELECT sensor_tree();')
-        .then(tree => {
-            this.sensorTree = tree;
-            return this;
-        });
-    }
-}
-
-function setUpSocketIo(pg, io) {
-    const sensorTreeCache = new SensorTreeCache(pg);
-    return sensorTreeCache.seed()
-    .then(treeCache => _setUpSocketIo(io, treeCache));
-}
-
-function _setUpSocketIo(io, treeCache) {
-     io.on('connection', function (socket) {
-        const args = parseArgs(socket.handshake.query, treeCache.sensorTree);
-        if (args.err) {
-            socket.emit('internal_error', {error: args.err});
-            socket.disconnect();
-        }
-        socket.args = args;
-    });
-}
-
 function shouldSend(args, observation) {
     const {sensor, node, network, feature} = observation.attributes;
     const {sensors, nodes, networks, features} = args;
@@ -71,90 +36,145 @@ function shouldSend(args, observation) {
     return pairs.every(([set, individual]) => set.has(individual));
 }
 
+class SensorTreeCache {
+    constructor(pg) {
+        this.pg = pg;
+        setInterval(() => {
+            this._fetchSensorTree()
+            .catch(err => {
+                // Just log the error on a refresh.
+                // Client can still use the cached vesion.
+                console.log(`Error: could not refresh sensor metadata: ${err}`);
+            });
+        }, 1000*60*10);
+    }
+    // Returns promise to signal that cache has a tree
+    seed() {
+        return this._fetchSensorTree()
+        .then(() => this)
+        .catch(err => {
+            // Abort on error if we fail the first time.
+            console.log(`Fatal error: could not initialize sensor metadata: ${err}`);
+            // You should let caller decide to do this to keep testing reasonable
+            process.exit(1);
+        })
+    }
+    _fetchSensorTree() {
+        return this.pg.query('SELECT sensor_tree();')
+        .then(tree => {
+            try {
+                this.sensorTree = SensorTreeCache._prepTree(tree);
+            }
+            catch (e) {
+                console.log('Could not traverse tree from postgres');
+                throw e;
+            }
+        });
+    }
+    /**
+     * Mutates and returns tree with consistent structure.
+     * Throws error if tree is invalid.
+     */
+    static _prepTree(tree) {
+        const nodes = _.values(tree);
+        for (let node of nodes) {
+            for (let [sensorName, featureObject] of _.pairs(node)) {
+                node[sensorName] = SensorTreeCache._mungeFeatureObject(featureObject);
+            }
+        }
+        return tree;
+    }
+    /*
+        Turns 
+    {
+        nickname1: 'feature1.property1', 
+        nickname2: 'feature1.property2',
+        nickname3: 'feature2.property1'
+    }
+        into 
+    {
+        feature1: null,
+        feature2: null
+    }
+    */
+    static _mungeFeatureObject(featureObject) {
+        // Extract feature string from each observed property,
+        let features = _.values(featureObject).map(op => op.split('.')[0]);
+        // and dedupe.
+        features = [...new Set(features)];
+        // Make object mapping each feature to null. Looks silly, 
+        // but we're just going for consistent structure in the tree.
+        const munged = {};
+        for (let f of features) {
+            munged[f] = null;
+        }
+        return munged;
+    }
+}
+
+function setUpSocketIo(pg, io) {
+    const sensorTreeCache = new SensorTreeCache(pg);
+    return sensorTreeCache.seed()
+    .then(treeCache => {
+        io.on('connection', function (socket) {
+            const args = parseArgs(socket.handshake.query, treeCache.sensorTree);
+            if (args.err) {
+                socket.emit('internal_error', {error: args.err});
+                socket.disconnect();
+            }
+            socket.args = args;
+        });
+    });
+    // sensorTreeCache.seed aborts on failure. 
+    // So no need to catch promise here.
+}
+
 /**
  * 
  * @param {*} rawArgs
  *  User provided query arguments 
  * @param {*} tree
- *  Sensor network metadata in format provided py postgres sensor_tree procedure
+ *  Sensor network metadata in format provided py postgres sensor_tree procedure.
+ *  See parseArgsTests.js for example of how it's formatted
+ * 
+ * Returns an object with keys "networks", "nodes", "sensors", and "features"
+ * where each value is an ES6 Set of strings representing the subset the user has selected.
  */
 function parseArgs(rawArgs, tree) {
-    const args = {};
     const networkName = rawArgs.network;
-    if (!networkName) {
-        return {err: 'You must specify a sensor network'};
-    }
-    // For consistency, make networks a list of length one.
-    args.networks = new Set([networkName]);
+    if (!networkName) return {err: 'You must specify a sensor network'};
+    tree = tree[networkName] // Trim tree to part under the network
+    if (!tree) return {err: `The network ${networkName} does not exist`};
+    
+    // For consistency, make networks a set of one.
+    const validatedArgs = {
+        networks: new Set([networkName])
+    };
 
+    // Each optional field provided is expected to be a comma separated list.
+    // Store them in parsedArgs as an array of strings.
+    // Then, "lock them in" to validatedArgs as Sets as we move down the tree.
     const optionalFields = ['nodes', 'sensors', 'features'];
+    const parsedArgs = {}
     for (let f of optionalFields) {
         if (rawArgs[f]) {
             try {
-                args[f] = rawArgs[f].toString().toLowerCase().split(',');
+                parsedArgs[f] = rawArgs[f].toLowerCase().split(',');
             }
             catch (err) {
                 return {err: `Could not parse argument ${f}=${rawArgs[f]}`};
             }
         }
     }
-
-    const network = tree[networkName];
-    if (!network) {
-        return {err: `The network ${network} does not exist`};
-    }
-    if (args.nodes) {
-        const invalidNodes = args.nodes.filter(n => !(n in network));
-        if (invalidNodes.length > 0) {
-            return {err: `Nodes ${formatSet(invalidNodes)} are not in network ${networkName}.`}
+    for (let f of optionalFields) {
+        let keys = parsedArgs[f] || _.keys(tree);
+        const invalidKeys = keys.filter(k => !(k in tree));
+        if (invalidKeys.length > 0) {
+            return {err: `Could not find selected ${f}: ${invalidKeys.join(',')}`};
         }
+        const trimmed = _.pick(tree, ...keys);
+        tree = _.values(trimmed).reduce((chopped, branch) => Object.assign(chopped, branch), {});
+        validatedArgs[f] = new Set(keys); 
     }
-    else {
-        args.nodes = _.keys(network);
-    }
-    args.nodes = new Set(args.nodes);
-    
-    const viableSensors = {};
-    for (let nodeName of args.nodes) {
-        const node = network[nodeName];
-        Object.assign(viableSensors, node);
-    }
-    if (args.sensors) {
-        const invalidSensors = args.sensors.filter(s => !(s in viableSensors));
-        if (invalidSensors.length > 0) {
-            return {err: `Sensors ${formatSet(invalidSensors)} are not in nodes ${formatSet(args.nodes)}.`}
-        }
-    }
-    else {
-        args.sensors = _.keys(viableSensors);
-    }
-    const trimmedSensors = _.pick(viableSensors, ...args.sensors);
-    args.sensors = new Set(args.sensors);
-
-    
-    // BUG. I failed to trim the tree here.
-    // {sensorName: {beehiveNickame: feature.property}}
-    const observedProperties = _.flatten(_.values(trimmedSensors).map(_.values));
-    const viableFeatures = [...new Set(observedProperties.map(op => op.split('.')[0]))];
-    if (!args.features) {
-        args.features = viableFeatures;
-    }
-    else {
-        // console.log(args.features, viableFeatures);
-        const invalidFeatures = args.features.filter(feat => !(viableFeatures.includes(feat)));
-        if (invalidFeatures.length > 0) {
-            return {err: `Features ${formatSet(invalidFeatures)} are not reported by sensors ${formatSet(args.sensors)}.`}
-        }
-    }
-    args.features = new Set(args.features);
-    return args;
-}
-
-function formatSet(setLike) {
-    try {
-        return [...setLike].join(', ');
-    }
-    catch (e) {
-        return '[]';
-    }
+    return validatedArgs;
 }
