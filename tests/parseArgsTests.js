@@ -1,10 +1,8 @@
-// const assert = require('assert');
 const _ = require('underscore');
 const {parseArgs} = require('../app/pubsub');
 
 const chai = require('chai');
-// chai.use(require('chai-as-promised'));
-const {assert, expect} = chai;
+const {expect} = chai;
 
 const tree = {
     network1: {
@@ -42,7 +40,7 @@ const settify = o => _.mapObject(o, arr => new Set(arr));
    supplied or not supplied.
    xxx means a test where nodes, sensors, features all are specified.
    xox means nodes are specifies, sensors aren't, features are.
-   You see the pattern.
+   You see the pattern. One test for each happy path.
  */
 describe('parseArgs', function() {
     // ooo
@@ -157,6 +155,10 @@ describe('parseArgs', function() {
         expect(parseArgs(args, tree)).to.deep.equal(expected);
     });
 
+    /**
+     * Tests for unhappy paths.
+     * Lots of ways for a user to make an invalid query.
+     */
     it('disallows sensors from nodes the user did not select', function(){
         const args = {
             network: 'network1', 
@@ -171,6 +173,25 @@ describe('parseArgs', function() {
             network: 'network1', 
             nodes: 'node1', 
             features: 'magnetic_field,atmospheric_pressure'
+        };
+        expect(parseArgs(args, tree).err).to.be.a('string');
+    });
+    it("gives up if the user doesn't supply a network", function(){
+        const args = {
+            features: 'atmospheric_pressure'
+        };
+        expect(parseArgs(args, tree).err).to.be.a('string');
+    });
+    it('fails gracefully if the user specifies a nonexistent network', function() {
+        const args = {
+            network: 'networkFoo'
+        };
+        expect(parseArgs(args, tree).err).to.be.a('string');
+    });
+    it('fails gracefully if the user asks for nonexistent features', function() {
+        const args = {
+            network: 'network1',
+            features: 'bird_hatchings,frog_croaks'
         };
         expect(parseArgs(args, tree).err).to.be.a('string');
     });

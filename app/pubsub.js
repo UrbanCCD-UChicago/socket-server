@@ -8,7 +8,15 @@ exports.parseArgs = parseArgs;
 function setUpRedis(redis, io) {
     redis.subscribe(REDIS_CHANNEL_NAME);
     redis.on('message', (channel, msg) => { 
-        const observations = JSON.parse(msg);
+        let observations;
+        try {
+            observations = JSON.parse(msg);
+        }
+        catch (e) {
+            console.log('Could not parse observations: ' + e);
+            return;
+        }
+        
         const sockets = _.values(io.sockets.connected);
         // io.sockets gives the default namespace.
         // namespace.connected gives hash of id to socket for all connected clients.
