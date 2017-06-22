@@ -6,6 +6,7 @@
     "url": "git://github.com/UrbanCCD-UChicago/socket-server.git"
   },
   "main": "EB_app/server.js",
+  "engines" : { "node" : "~6.10.0" },
   "scripts": {
     "test": "mocha tests/travis_tests",
     "start": "node app/server.js"
