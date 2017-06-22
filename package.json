@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "chai": "^4.0.2",
+    "chai-as-promised": "^7.0.0",
     "exit": "~0.1.2",
     "mocha": "^3.4.2",
     "nodeunit": "~0.9.4",

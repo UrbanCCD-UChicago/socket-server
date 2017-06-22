@@ -1,10 +1,6 @@
 const _ = require('underscore');
 const REDIS_CHANNEL_NAME = 'plenario_observations';
 
-exports.setUpRedis = setUpRedis;
-exports.setUpSocketIo = setUpSocketIo;
-exports.parseArgs = parseArgs;
-
 function setUpRedis(redis, io) {
     redis.subscribe(REDIS_CHANNEL_NAME);
     redis.on('message', (channel, msg) => { 
@@ -50,14 +46,7 @@ class SensorTreeCache {
     }
     // Returns promise to signal that cache has a tree
     seed() {
-        return this._fetchSensorTree()
-        .then(() => this)
-        .catch(err => {
-            // Abort on error if we fail the first time.
-            console.log(`Fatal error: could not initialize sensor metadata: ${err}`);
-            // You should let caller decide to do this to keep testing reasonable
-            process.exit(1);
-        })
+        return this._fetchSensorTree().then(() => this);
     }
     _fetchSensorTree() {
         return this.pg.query('SELECT sensor_tree();')
@@ -66,7 +55,7 @@ class SensorTreeCache {
                 this.sensorTree = SensorTreeCache._prepTree(tree);
             }
             catch (e) {
-                console.log('Could not traverse tree from postgres');
+                console.log('Could not traverse tree from postgres: ' + e);
                 throw e;
             }
         });
@@ -76,10 +65,12 @@ class SensorTreeCache {
      * Throws error if tree is invalid.
      */
     static _prepTree(tree) {
-        const nodes = _.values(tree);
+        // Reformat each leaf node of the tree
+        const networks = _.values(tree);
+        const nodes = _.flatten(networks.map(_.values));
         for (let node of nodes) {
-            for (let [sensorName, featureObject] of _.pairs(node)) {
-                node[sensorName] = SensorTreeCache._mungeFeatureObject(featureObject);
+            for (let [sensorName, sensor] of _.pairs(node)) {
+                node[sensorName] = SensorTreeCache._mungeFeatureObject(sensor);
             }
         }
         return tree;
@@ -124,9 +115,13 @@ function setUpSocketIo(pg, io) {
             }
             socket.args = args;
         });
+    })
+    .catch(err => {
+        // Abort on error if we fail the first time.
+        console.log(`Fatal error: could not initialize sensor metadata: ${err}`);
+        // You should let caller decide to do this to keep testing reasonable
+        process.exit(1);
     });
-    // sensorTreeCache.seed aborts on failure. 
-    // So no need to catch promise here.
 }
 
 /**
@@ -181,3 +176,8 @@ function parseArgs(rawArgs, tree) {
     }
     return validatedArgs;
 }
+
+exports.setUpRedis = setUpRedis;
+exports.setUpSocketIo = setUpSocketIo;
+exports.parseArgs = parseArgs;
+exports.SensorTreeCache = SensorTreeCache;

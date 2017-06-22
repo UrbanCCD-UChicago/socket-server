@@ -3,30 +3,8 @@ const {parseArgs} = require('../app/pubsub');
 
 const chai = require('chai');
 const {expect} = chai;
-    
-const tree = {
-    network1: {
-        node1: {
-            sensor1: {
-                temperature: null,
-                relative_humidity: null
-            },
-            sensor2: {
-                magnetic_field: null
-            }
-        },
-        node2: {
-            // Deliberately duplicating
-            sensor2: {
-                magnetic_field: null
-            },
-            sensor3: {
-                temperature: null,
-                atmospheric_pressure: null
-            }
-        }
-    }
-};
+
+const tree = require('./fixtures').formattedTree;
 
 const settify = o => _.mapObject(o, arr => new Set(arr));
 
