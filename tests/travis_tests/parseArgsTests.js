@@ -1,10 +1,10 @@
 const _ = require('underscore');
-const {parseArgs} = require('../app/pubsub');
+const {parseArgs} = require('../../app/pubsub');
 
 const chai = require('chai');
 const {expect} = chai;
 
-const tree = require('./fixtures').formattedTree;
+const tree = require('../fixtures').formattedTree;
 
 const settify = o => _.mapObject(o, arr => new Set(arr));
 

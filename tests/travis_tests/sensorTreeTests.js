@@ -1,6 +1,6 @@
 const clone = require('clone');
 
-const fixtures = require('./fixtures');
+const fixtures = require('../fixtures');
 const unformatted = fixtures.smallTree;
 const formatted = fixtures.formattedTree;
 const unformatted2 = fixtures.smallTree2;
@@ -13,7 +13,7 @@ const {expect, assert} = chai;
 
 const sinon = require('sinon');
 
-const {SensorTreeCache} = require('../app/pubsub.js');
+const {SensorTreeCache} = require('../../app/pubsub.js');
 
 const packageResult = sensor_tree => ({rows: [{sensor_tree}]});
 

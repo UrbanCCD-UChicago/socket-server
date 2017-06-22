@@ -1,4 +1,4 @@
-const fixtures = require('./fixtures');
+const fixtures = require('../fixtures');
 const unformatted = fixtures.smallTree;
 const formatted = fixtures.formattedTree;
 
@@ -6,7 +6,7 @@ const _ = require('underscore');
 const chai = require('chai');
 const {expect} = chai;
 
-const {setUpRedis} = require('../app/pubsub.js');
+const {setUpRedis} = require('../../app/pubsub.js');
 
 const sinon = require('sinon');
 
