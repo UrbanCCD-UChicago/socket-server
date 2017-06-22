@@ -50,8 +50,9 @@ class SensorTreeCache {
     }
     _fetchSensorTree() {
         return this.pg.query('SELECT sensor_tree();')
-        .then(tree => {
+        .then(result => {
             try {
+                const tree = result.rows[0].sensor_tree;
                 this.sensorTree = SensorTreeCache._prepTree(tree);
             }
             catch (e) {

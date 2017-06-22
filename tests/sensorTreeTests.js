@@ -15,6 +15,8 @@ const sinon = require('sinon');
 
 const {SensorTreeCache} = require('../app/pubsub.js');
 
+const packageResult = sensor_tree => ({rows: [{sensor_tree}]});
+
 function expectError(fakePgClient, done) {
     const cache = new SensorTreeCache(fakePgClient);
     cache.seed()
@@ -38,10 +40,10 @@ function expectSuccess(in1, in2, out1, out2, done) {
             query(statement) {
                 if (!this.called) {
                     this.called = true;
-                    return Promise.resolve(clone(in1));    
+                    return Promise.resolve(packageResult(clone(in1)));    
                 }
                 else {
-                    return Promise.resolve(clone(in2));
+                    return Promise.resolve(packageResult(clone(in2)));
                 }
             }
         }
