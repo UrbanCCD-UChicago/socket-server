@@ -73,37 +73,6 @@ describe('SensorTreeCache', function() {
             formatted2, 
             done
         );
-        
-        // const clock = sinon.useFakeTimers();
-        // const fakeClient = {
-        //     called: false,
-        //     query(statement) {
-        //         if (!this.called) {
-        //             this.called = true;
-        //             return Promise.resolve(clone(unformatted));    
-        //         }
-        //         else {
-        //             return Promise.resolve(clone(unformatted2));
-        //         }
-        //     }
-        // }
-        // const cache = new SensorTreeCache(fakeClient);
-        
-        // cache.seed().then(treeCache => {
-        //     expect(treeCache.sensorTree).to.deep.equal(formatted);
-        //     // 10 minutes and one second later...
-        //     clock.tick(1000*60*10 + 1000);
-        //     return treeCache;
-        // }) // Let tree fetch promise resolve.
-        // .then(treeCache => {
-        //     expect(treeCache.sensorTree).to.deep.equal(formatted2);
-        //     done();
-        // })
-        // .catch(e => {
-        //     console.log(e);
-        //     done(e);
-        // })
-        // .then(clock.restore);
     });
     it('fails if postgres acts up', function(done) {
         const fakeClient = {
