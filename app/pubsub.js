@@ -13,9 +13,8 @@ function setUpRedis(redis, io) {
             return;
         }
         
+        // io.sockets.connected gives array of all connected sockets
         const sockets = _.values(io.sockets.connected);
-        // io.sockets gives the default namespace.
-        // namespace.connected gives hash of id to socket for all connected clients.
         for (let o of observations) {
             const eligibleSockets = sockets.filter(s => shouldSend(s.args, o))
             for (let s of eligibleSockets) {
@@ -40,6 +39,8 @@ class SensorTreeCache {
             .catch(err => {
                 // Just log the error on a refresh.
                 // Client can still use the cached vesion.
+                // Consider troubleshooting steps here, 
+                // like attempting to reconnect to postgres.
                 console.log(`Error: could not refresh sensor metadata: ${err}`);
             });
         }, 1000*60*10);
