@@ -68,7 +68,10 @@ class SensorTreeCache {
         // Reformat each leaf node of the tree
         const networks = _.values(tree);
         const nodes = _.flatten(networks.map(_.values));
+        if (nodes.length === 0) throw new Error('Network has no nodes');
         for (let node of nodes) {
+            const sensorPairs = _.pairs(node);
+            if (sensorPairs.length === 0) throw new Error('Node has no sensors');
             for (let [sensorName, sensor] of _.pairs(node)) {
                 node[sensorName] = SensorTreeCache._mungeFeatureObject(sensor);
             }
