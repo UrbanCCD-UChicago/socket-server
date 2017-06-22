@@ -1,3 +1,5 @@
+const clone = require('clone');
+
 const fixtures = require('./fixtures');
 const unformatted = fixtures.smallTree;
 const formatted = fixtures.formattedTree;
@@ -29,32 +31,30 @@ function expectError(fakePgClient, done) {
     })
 }
 
-describe('SensorTreeCache', function() {
-    it('generates sensor trees correctly', function(done) {
-        const clock = sinon.useFakeTimers();
+function expectSuccess(in1, in2, out1, out2, done) {
+    const clock = sinon.useFakeTimers();
         const fakeClient = {
             called: false,
             query(statement) {
                 if (!this.called) {
                     this.called = true;
-                    return Promise.resolve(unformatted);    
+                    return Promise.resolve(clone(in1));    
                 }
                 else {
-                    return Promise.resolve(unformatted2);
+                    return Promise.resolve(clone(in2));
                 }
             }
         }
-        // const fakeClient = makeFakePgClient(unformatted, unformatted2);
         const cache = new SensorTreeCache(fakeClient);
         
         cache.seed().then(treeCache => {
-            expect(treeCache.sensorTree).to.deep.equal(formatted);
+            expect(treeCache.sensorTree).to.deep.equal(out1);
             // 10 minutes and one second later...
             clock.tick(1000*60*10 + 1000);
             return treeCache;
         }) // Let tree fetch promise resolve.
         .then(treeCache => {
-            expect(treeCache.sensorTree).to.deep.equal(formatted2);
+            expect(treeCache.sensorTree).to.deep.equal(out2);
             done();
         })
         .catch(e => {
@@ -62,6 +62,48 @@ describe('SensorTreeCache', function() {
             done(e);
         })
         .then(clock.restore);
+}
+
+describe('SensorTreeCache', function() {
+    it('generates sensor trees correctly', function(done) {
+        expectSuccess(
+            unformatted, 
+            unformatted2, 
+            formatted, 
+            formatted2, 
+            done
+        );
+        
+        // const clock = sinon.useFakeTimers();
+        // const fakeClient = {
+        //     called: false,
+        //     query(statement) {
+        //         if (!this.called) {
+        //             this.called = true;
+        //             return Promise.resolve(clone(unformatted));    
+        //         }
+        //         else {
+        //             return Promise.resolve(clone(unformatted2));
+        //         }
+        //     }
+        // }
+        // const cache = new SensorTreeCache(fakeClient);
+        
+        // cache.seed().then(treeCache => {
+        //     expect(treeCache.sensorTree).to.deep.equal(formatted);
+        //     // 10 minutes and one second later...
+        //     clock.tick(1000*60*10 + 1000);
+        //     return treeCache;
+        // }) // Let tree fetch promise resolve.
+        // .then(treeCache => {
+        //     expect(treeCache.sensorTree).to.deep.equal(formatted2);
+        //     done();
+        // })
+        // .catch(e => {
+        //     console.log(e);
+        //     done(e);
+        // })
+        // .then(clock.restore);
     });
     it('fails if postgres acts up', function(done) {
         const fakeClient = {
@@ -81,6 +123,13 @@ describe('SensorTreeCache', function() {
         }
         expectError(fakeClient, done);
     });
-    // it('throws an error if seeding fails');
-    // it('fails gracefully if refresh fails')
+    it('fails gracefully if refresh fails', function(done) {
+        expectSuccess(
+            unformatted, 
+            {foo: {bar: 'gorp'}}, 
+            formatted, 
+            formatted, 
+            done
+        );
+    })
 });
