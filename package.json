@@ -1,27 +1,28 @@
 {
   "name": "socket-server",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
     "url": "git://github.com/UrbanCCD-UChicago/socket-server.git"
   },
-  "main": "EB_app/index.js",
+  "main": "EB_app/server.js",
+  "engines" : { "node" : "~6.10.0" },
   "scripts": {
-    "test": "node tests/travis_tests/test_wrapper.js",
-    "start": "node app/index.js"
+    "test": "mocha tests/travis_tests",
+    "start": "node app/server.js"
   },
   "dependencies": {
-    "promise": "~7.1.1",
+    "pg": "^6.2.4",
     "redis": "~2.6.2",
     "socket.io": "~1.4.6",
-    "express": "~4.13.4",
-    "winston": "2.3.1"
+    "socket.io-client": "^2.0.3",
+    "underscore": "^1.8.3"
   },
   "devDependencies": {
-    "socket.io-client": "~1.4.8",
-    "body-parser": "~1.15.2",
-    "exit": "~0.1.2",
-    "nodeunit": "~0.9.4",
-    "underscore": "~1.8.3"
+    "chai": "^4.0.2",
+    "chai-as-promised": "^7.0.0",
+    "clone": "^2.1.1",
+    "mocha": "^3.4.2",
+    "sinon": "^2.3.5"
   }
 }
