@@ -176,7 +176,7 @@ function listenForSubscribers(cache, io) {
  * @param {*} rawArgs
  *  User provided query arguments 
  * @param {*} tree
-  // TODO: specify the tree format
+    formatted style, like formattedTree in tests/fixtures.js
  * 
  * Returns an object with keys "networks", "nodes", "sensors", and "features"
  * where each value is an ES6 Set of strings representing the subset the user has selected.

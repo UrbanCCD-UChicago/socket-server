@@ -37,7 +37,7 @@ class SensorTreeCache {
     }
     /**
      * Returns tree with consistent structure.
-     * // TODO: Make clear what that structure is
+     * (Namely, like formattedTree in tests/fixtures.js)
      * Throws error if tree is invalid.
      */
     static _prepTree(tree) {
