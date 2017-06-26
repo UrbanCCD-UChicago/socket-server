@@ -101,7 +101,7 @@ function splitRecordIntoObservations(tree, record) {
     // by making a mapping from feature name to observation object
     const observations = {};
     for (var beehivePropertyName in record.data) {
-        if (!(beehivePropertyName in sensorMetadata)) return false;
+        if (!(beehivePropertyName in sensorMetadata)) return null;
         const [feature, property] = sensorMetadata[beehivePropertyName].split('.');
         if (!observations[feature]) {
             observations[feature] = {
