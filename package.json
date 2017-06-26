@@ -8,7 +8,7 @@
   "main": "EB_app/server.js",
   "engines" : { "node" : "~6.10.0" },
   "scripts": {
-    "test": "mocha tests/travis_tests",
+    "test": "mocha tests/travisTests",
     "start": "node app/server.js"
   },
   "dependencies": {

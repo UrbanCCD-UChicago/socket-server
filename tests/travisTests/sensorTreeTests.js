@@ -13,9 +13,9 @@ const {expect, assert} = chai;
 
 const sinon = require('sinon');
 
-const {SensorTreeCache} = require('../../app/pubsub.js');
+const {SensorTreeCache} = require('../../app/sensorTreeCache.js');
 
-const packageResult = sensor_tree => ({rows: [{sensor_tree}]});
+const packageResult = sensor_tree => Promise.resolve({rows: [{sensor_tree}]});
 
 function expectError(fakePgClient, done) {
     const cache = new SensorTreeCache(fakePgClient);
@@ -40,23 +40,24 @@ function expectSuccess(in1, in2, out1, out2, done) {
             query(statement) {
                 if (!this.called) {
                     this.called = true;
-                    return Promise.resolve(packageResult(clone(in1)));    
+                    return packageResult(in1);    
                 }
                 else {
-                    return Promise.resolve(packageResult(clone(in2)));
+                    return packageResult(in2);
                 }
             }
         }
         const cache = new SensorTreeCache(fakeClient);
         
         cache.seed().then(treeCache => {
-            expect(treeCache.sensorTree).to.deep.equal(out1);
+            expect(treeCache.argsTree).to.deep.equal(out1);
+            expect(treeCache.recordTree).to.deep.equal(in1);
             // 10 minutes and one second later...
             clock.tick(1000*60*10 + 1000);
             return treeCache;
         }) // Let tree fetch promise resolve.
         .then(treeCache => {
-            expect(treeCache.sensorTree).to.deep.equal(out2);
+            expect(treeCache.argsTree).to.deep.equal(out2);
             done();
         })
         .catch(e => {
@@ -87,9 +88,7 @@ describe('SensorTreeCache', function() {
     it('fails if postgres sends it a malformed response', function(done) {
         const fakeClient = {
             query() {
-                return Promise.resolve({
-                    foo: {bar: 3}
-                });
+                return packageResult({foo: {bar: 3}});
             }
         }
         expectError(fakeClient, done);
