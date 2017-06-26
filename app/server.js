@@ -1,4 +1,5 @@
-const {setUpRedis, setUpSocketIo} = require('./pubsub.js');
+const {SensorTreeCache} = require('./sensorTreeCache.js');
+const {listenForRecords, listenForSubscribers} = require('./pubsub.js');
 
 const redis = require('redis').createClient({
     host: process.env.REDIS_HOST || 'localhost', 
@@ -24,6 +25,15 @@ const io = require("socket.io")(app, {
 
 const pg = require('pg');
 
-setUpSocketIo(new pg.Client({}), io)
-.then(() => setUpRedis(redis, io))
-.then(() => app.listen(8081));
+const sensorTreeCache = new SensorTreeCache(pg);
+sensorTreeCache.seed()
+.catch(err => {
+    // Abort on error if we fail to initiate the sensor tree cache
+    console.log(`Fatal error: could not initialize sensor metadata: ${err}`);
+    process.exit(1);
+})
+.then(cache => {
+    listenForSubscribers(cache, io);
+    listenForRecords(cache, io, redis);
+    app.listen(8081);
+});
