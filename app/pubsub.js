@@ -24,24 +24,26 @@ function listenForRecords(cache, io, redis) {
         // Convert to observations
         const tree = cache.recordTree;
         const observationArrays = records
-                                    .map(r => splitRecordIntoObsevations(tree, r))
+                                    .map(r => splitRecordIntoObservations(tree, r))
                                     .filter(Boolean);
         const formattedObservations = _.flatten(observationArrays);
         if (formattedObservations.length === 0) return;
 
-        // Push observations to eligible sockets
-        // io.sockets.connected gives array of all connected sockets
-        const sockets = _.values(io.sockets.connected);
-        for (let o of formattedObservations) {
-            const eligibleSockets = sockets.filter(s => shouldSend(s.args, o))
-            for (let s of eligibleSockets) {
-                s.emit('data', o);
-            }
-        }
+        // io.sockets.connected gives hash from id to socket for all connected sockets
+        pushObservations(formattedObservations, _.values(io.sockets.connected));
     });
 }
 
-function splitRecordIntoObsevations(tree, record) {
+function pushObservations(observations, sockets) {
+    for (let o of observations) {
+        const eligibleSockets = sockets.filter(s => shouldSend(s.args, o))
+        for (let s of eligibleSockets) {
+            s.emit('data', o);
+        }
+    }
+}
+
+function splitRecordIntoObservations(tree, record) {
     // Does this combination of network, node and sensor exist in our metadata?
     const sensorMetadata = extractSensorMetadata(tree, record);
     if (!sensorMetadata) return null;
@@ -224,3 +226,5 @@ function parseArgs(rawArgs, tree) {
 exports.listenForRecords = listenForRecords;
 exports.listenForSubscribers = listenForSubscribers;
 exports.parseArgs = parseArgs;
+exports.splitRecordIntoObservations = splitRecordIntoObservations;
+exports.pushObservations = pushObservations;
