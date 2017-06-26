@@ -5,17 +5,17 @@ install:
 - npm install
 script:
 - npm test
-deploy:
-  provider: elasticbeanstalk
-  access_key_id: AKIAJRHZSK7SXKUXZLNQ
-  secret_access_key:
-    secure: MZdwJM7uH0YvZaARYPPzrsTeI7QpK7reMHTdWTjiu2IvnOxbLhdQpag3b/EV5IO/YukxBgZyWqzA/ha1xbXm4ConOCiy3Iq3PEpDcdswJszM0tothJLw34cVkEdm8unUjuqMe2TrwCnZi/aig33fQsOalKP2722uZnyj+VXF1dD7aG5GuPY381TBmvUiuhGOOmsZC9ThqDtsr0wOcjIzBGYfBwNOnKGUng8sIAES2cm3XSCQrijhINEEsQwl4gkbGMnDLkeNc1ckooK/H+XCqzHESiknP9GYh3ZaPS2inYmBlsIUatyn+mFFRs4NKvY2H1xbqjgcNhCCzIMKuz55rj/cjOU4KURYWG6OHjXuhJvpKnMJ59Kuvmq4dTD54aoQWrVYg7yU6V/GfMfnPZAlOnp4Gy3NEh5W6p0Bb2YLoDLJ+3bFFArerukHTDQlH7j+wOU1L5O0H1wb5pIbC7O6p27/aLRT71j5xln0mMyQ2z05XKd3uBOiVkwFF+zho10YxxiqhlW1jvxrgkAQ2uFv4BCrse3QjGopDnyhlLcxdwkEjz2hK7abOfRRS34iewldPc8dDKcs9wpzYSTatBxjXPp0Hy7BZLqyjRl4wTkxWRlCAfmqqaz7CBFpWB1TyVLCTwRa3tYUAuO38rbOnpvUN/55Ydd+i1YRBd0I2BFpOog=
-  region: us-east-1
-  app: Socket-Server
-  env: socketServer-env
-  bucket_name: elasticbeanstalk-us-east-1-031052761859
-  on:
-    repo: UrbanCCD-UChicago/socket-server
+# deploy:
+#   provider: elasticbeanstalk
+#   access_key_id: AKIAJRHZSK7SXKUXZLNQ
+#   secret_access_key:
+#     secure: MZdwJM7uH0YvZaARYPPzrsTeI7QpK7reMHTdWTjiu2IvnOxbLhdQpag3b/EV5IO/YukxBgZyWqzA/ha1xbXm4ConOCiy3Iq3PEpDcdswJszM0tothJLw34cVkEdm8unUjuqMe2TrwCnZi/aig33fQsOalKP2722uZnyj+VXF1dD7aG5GuPY381TBmvUiuhGOOmsZC9ThqDtsr0wOcjIzBGYfBwNOnKGUng8sIAES2cm3XSCQrijhINEEsQwl4gkbGMnDLkeNc1ckooK/H+XCqzHESiknP9GYh3ZaPS2inYmBlsIUatyn+mFFRs4NKvY2H1xbqjgcNhCCzIMKuz55rj/cjOU4KURYWG6OHjXuhJvpKnMJ59Kuvmq4dTD54aoQWrVYg7yU6V/GfMfnPZAlOnp4Gy3NEh5W6p0Bb2YLoDLJ+3bFFArerukHTDQlH7j+wOU1L5O0H1wb5pIbC7O6p27/aLRT71j5xln0mMyQ2z05XKd3uBOiVkwFF+zho10YxxiqhlW1jvxrgkAQ2uFv4BCrse3QjGopDnyhlLcxdwkEjz2hK7abOfRRS34iewldPc8dDKcs9wpzYSTatBxjXPp0Hy7BZLqyjRl4wTkxWRlCAfmqqaz7CBFpWB1TyVLCTwRa3tYUAuO38rbOnpvUN/55Ydd+i1YRBd0I2BFpOog=
+#   region: us-east-1
+#   app: Socket-Server
+#   env: socketServer-env
+#   bucket_name: elasticbeanstalk-us-east-1-031052761859
+#   on:
+#     repo: UrbanCCD-UChicago/socket-server
 notifications:
   slack:
     rooms:
