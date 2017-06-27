@@ -8,10 +8,11 @@
   "main": "EB_app/server.js",
   "engines" : { "node" : "~6.10.0" },
   "scripts": {
-    "test": "mocha tests/travis_tests",
+    "test": "mocha tests/travisTests",
     "start": "node app/server.js"
   },
   "dependencies": {
+    "clone": "^2.1.1",
     "pg": "^6.2.4",
     "redis": "~2.6.2",
     "socket.io": "~1.4.6",
@@ -21,7 +22,7 @@
   "devDependencies": {
     "chai": "^4.0.2",
     "chai-as-promised": "^7.0.0",
-    "clone": "^2.1.1",
+    
     "mocha": "^3.4.2",
     "sinon": "^2.3.5"
   }

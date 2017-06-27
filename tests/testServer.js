@@ -1,22 +1,10 @@
-const { setUpRedis, setUpSocketIo } = require("../app/pubsub.js");
-const {sensorTree} = require('./fixtures');
-
-const redis = require("redis").createClient({
-  host: process.env.REDIS_HOST || "localhost",
-  port: 6379
-});
-
-const app = require("http").createServer();
-const io = require("socket.io")(app, {
-  transports: ["websocket"]
-});
+const {createServer} = require('../app/createServer.js');
+const {localTestTree} = require('./fixtures.js');
 
 const pgClient = {
   query(statement) {
-    return  Promise.resolve(sensorTree);
+    return Promise.resolve({rows: [{sensor_tree: localTestTree}]});
   }
 };
 
-setUpSocketIo(pgClient, io)
-  .then(() => setUpRedis(redis, io))
-  .then(() => app.listen(8081));
+createServer(pgClient);

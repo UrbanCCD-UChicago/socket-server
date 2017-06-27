@@ -1,27 +1,149 @@
 const _ = require('underscore');
 const REDIS_CHANNEL_NAME = 'plenario_observations';
+const clone = require('clone');
 
-function setUpRedis(redis, io) {
+/* 
+    listenForRecords and helpers:
+    Sets up callback that parses records sent over redis
+    and distributes them to the sockets that have subscribed to them.
+*/
+
+function listenForRecords(cache, io, redis) {
     redis.subscribe(REDIS_CHANNEL_NAME);
     redis.on('message', (channel, msg) => { 
-        let observations;
+        // Parse records
+        let records;
         try {
-            observations = JSON.parse(msg);
+            records = JSON.parse(msg);
         }
         catch (e) {
             console.log('Could not parse observations: ' + e);
             return;
         }
-        
-        // io.sockets.connected gives array of all connected sockets
-        const sockets = _.values(io.sockets.connected);
-        for (let o of observations) {
-            const eligibleSockets = sockets.filter(s => shouldSend(s.args, o))
-            for (let s of eligibleSockets) {
-                s.emit('data', o);
-            }
-        }
+
+        // Convert to observations
+        const tree = cache.recordTree;
+        const observationArrays = records
+                                    .map(r => splitRecordIntoObservations(tree, r))
+                                    .filter(Boolean);
+        const formattedObservations = _.flatten(observationArrays);
+        if (formattedObservations.length === 0) return;
+
+        // io.sockets.connected gives hash from id to socket for all connected sockets
+        pushObservations(formattedObservations, _.values(io.sockets.connected));
     });
+}
+
+function pushObservations(observations, sockets) {
+    for (let o of observations) {
+        const eligibleSockets = sockets.filter(s => shouldSend(s.args, o))
+        for (let s of eligibleSockets) {
+            s.emit('data', o);
+        }
+    }
+}
+
+function splitRecordIntoObservations(tree, record) {
+    // Does this combination of network, node and sensor exist in our metadata?
+    const sensorMetadata = extractSensorMetadata(tree, record);
+    if (!sensorMetadata) return null;
+    /** 
+     * We maintain a mapping from Beehive naming to Plenario naming in
+     * the leaf nodes (sensor objects) of the tree.
+     * 
+     * {
+     *      pressure: "atmospheric_pressure.pressure",
+     *      temperature: "temperature.temperature",
+     *      internal_temperature: "temperature.internal_temperature"
+     * }
+     * 
+     * where the keys are "nicknames" that Beehive uses,
+     * and the values are the features of interest maintained in Apiary.
+     * (The part before the dot is the feature of interest name;
+     *  the part after the dot is the specific property of the feature.)
+     * 
+     * The data documents in the record look like:
+     * 
+     * {
+     *      pressure: 12,
+     *      temperature: 58
+     *      internal_temperature: 103
+     * }
+     * 
+     * So the formatting task is to translate from Beehive nickname 
+     * and create a separate observation for each where the metadata is the same,
+     * but the observation object is distinct
+     * {
+     *   type: sensorObservations
+     *   attributes: {
+     *      node: foo,
+     * 
+     *      ...
+     *      feature: temperature,
+     *      properties: {temperature: 58, internal_temperature: 103 }
+     *   }
+     * },
+     * { 
+     *   type: sensorObservations
+     *   attributes: {
+     *      node: foo,
+     *      ...
+     *      feature: atmospheric_pressure,
+     *      properties: {pressure: 12}
+     *   }
+     * }
+     * 
+     * **/
+    
+    const {sensor, node, network, datetime} = record;
+
+    // Loop 1: Split up the observed properties by feature
+    // by making a mapping from feature name to observation object
+    const observations = {};
+    for (var beehivePropertyName in record.data) {
+        if (!(beehivePropertyName in sensorMetadata)) return null;
+        const [feature, property] = sensorMetadata[beehivePropertyName].split('.');
+        if (!observations[feature]) {
+            observations[feature] = {
+                feature,
+                properties: {}
+            };
+        }
+        observations[feature].properties[property] = record.data[beehivePropertyName];
+    }
+
+    // Loop 2: Turn each collection of observed properties into a JSONAPI-ish observation object
+    // Return array with one JSONAPI observation object 
+    // for each feature present in the record
+    return _.values(observations).map(o => {
+        const observationTemplate = {
+            type: 'sensorObservations',
+            attributes: {
+                sensor, node, network, datetime,
+                meta_id: record.meta_id
+            }
+        };
+        Object.assign(observationTemplate.attributes, o)
+        return observationTemplate;
+    });
+}
+
+function extractSensorMetadata(tree, observation) {
+    const {network, node, sensor} = observation;
+    let sensorMetadata;
+    try {
+        sensorMetadata = tree[network][node][sensor];    
+    }
+    catch (e) {}
+    // sensorMetadata will be undefined if an exception was thrown 
+    // or if the sensor metadata just happened to be undefined
+    if (sensorMetadata) {
+        return sensorMetadata;
+    }
+    else {
+        console.log(`could not validate ${JSON.stringify(observation)}`);
+        return null;
+    }
 }
 
 function shouldSend(args, observation) {
@@ -31,101 +153,21 @@ function shouldSend(args, observation) {
     return pairs.every(([set, individual]) => set.has(individual));
 }
 
-class SensorTreeCache {
-    constructor(pg) {
-        this.pg = pg;
-        setInterval(() => {
-            this._fetchSensorTree()
-            .catch(err => {
-                // Just log the error on a refresh.
-                // Client can still use the cached vesion.
-                // Consider troubleshooting steps here, 
-                // like attempting to reconnect to postgres.
-                console.log(`Error: could not refresh sensor metadata: ${err}`);
-            });
-        }, 1000*60*10);
-    }
-    // Returns promise to signal that cache has a tree
-    seed() {
-        return this._fetchSensorTree().then(() => this);
-    }
-    _fetchSensorTree() {
-        return this.pg.query('SELECT sensor_tree();')
-        .then(result => {
-            try {
-                const tree = result.rows[0].sensor_tree;
-                this.sensorTree = SensorTreeCache._prepTree(tree);
-            }
-            catch (e) {
-                console.log('Could not traverse tree from postgres: ' + e);
-                throw e;
-            }
-        });
-    }
-    /**
-     * Mutates and returns tree with consistent structure.
-     * Throws error if tree is invalid.
-     */
-    static _prepTree(tree) {
-        // Reformat each leaf node of the tree
-        const networks = _.values(tree);
-        const nodes = _.flatten(networks.map(_.values));
-        if (nodes.length === 0) throw new Error('Network has no nodes');
-        for (let node of nodes) {
-            const sensorPairs = _.pairs(node);
-            if (sensorPairs.length === 0) throw new Error('Node has no sensors');
-            for (let [sensorName, sensor] of _.pairs(node)) {
-                node[sensorName] = SensorTreeCache._mungeFeatureObject(sensor);
-            }
-        }
-        return tree;
-    }
-    /*
-        Turns 
-    {
-        nickname1: 'feature1.property1', 
-        nickname2: 'feature1.property2',
-        nickname3: 'feature2.property1'
-    }
-        into 
-    {
-        feature1: null,
-        feature2: null
-    }
-    */
-    static _mungeFeatureObject(featureObject) {
-        // Extract feature string from each observed property,
-        let features = _.values(featureObject).map(op => op.split('.')[0]);
-        // and dedupe.
-        features = [...new Set(features)];
-        // Make object mapping each feature to null. Looks silly, 
-        // but we're just going for consistent structure in the tree.
-        const munged = {};
-        for (let f of features) {
-            munged[f] = null;
-        }
-        return munged;
-    }
-}
+/* 
+    listenForSubscribers and helpers:
+    Sets up callback that takes in newly connected sockets,
+    parses the query arguments submitted with them,
+    and sticks the parsed arguments on to them for safe keeping.
+*/
 
-function setUpSocketIo(pg, io) {
-    const sensorTreeCache = new SensorTreeCache(pg);
-    return sensorTreeCache.seed()
-    .then(treeCache => {
-        io.on('connection', function (socket) {
-            const args = parseArgs(socket.handshake.query, treeCache.sensorTree);
-            if (args.err) {
-                socket.emit('internal_error', {error: args.err});
-                socket.disconnect();
-            }
-            socket.args = args;
-        });
-    })
-    .catch(err => {
-        // Abort on error if we fail the first time.
-        console.log(`Fatal error: could not initialize sensor metadata: ${err}`);
-        // You should let caller decide to do this to keep testing reasonable
-        process.exit(1);
+function listenForSubscribers(cache, io) {
+    io.on('connection', function (socket) {
+        const args = parseArgs(socket.handshake.query, cache.argsTree);
+        if (args.err) {
+            socket.emit('internal_error', {error: args.err});
+            socket.disconnect();
+        }
+        socket.args = args;
     });
 }
 
@@ -134,8 +176,7 @@ function setUpSocketIo(pg, io) {
  * @param {*} rawArgs
  *  User provided query arguments 
  * @param {*} tree
- *  Sensor network metadata in format provided py postgres sensor_tree procedure.
- *  See parseArgsTests.js for example of how it's formatted
+    formatted style, like formattedTree in tests/fixtures.js
  * 
  * Returns an object with keys "networks", "nodes", "sensors", and "features"
  * where each value is an ES6 Set of strings representing the subset the user has selected.
@@ -182,7 +223,8 @@ function parseArgs(rawArgs, tree) {
     return validatedArgs;
 }
 
-exports.setUpRedis = setUpRedis;
-exports.setUpSocketIo = setUpSocketIo;
+exports.listenForRecords = listenForRecords;
+exports.listenForSubscribers = listenForSubscribers;
 exports.parseArgs = parseArgs;
-exports.SensorTreeCache = SensorTreeCache;
+exports.splitRecordIntoObservations = splitRecordIntoObservations;
+exports.pushObservations = pushObservations;

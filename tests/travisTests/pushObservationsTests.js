@@ -1,12 +1,8 @@
-const fixtures = require('../fixtures');
-const unformatted = fixtures.smallTree;
-const formatted = fixtures.formattedTree;
-
 const _ = require('underscore');
 const chai = require('chai');
 const {expect} = chai;
 
-const {setUpRedis} = require('../../app/pubsub.js');
+const {pushObservations} = require('../../app/pubsub.js');
 
 const sinon = require('sinon');
 
@@ -65,20 +61,10 @@ const otherNetwork = {
 
 const sockets = [allInNetwork, someInNetwork, otherNetwork];
 
-describe('setUpRedis', function() {
+describe('pushObservations', function() {
     it("emits according to each socket's arguments", function() {
-        const redisSpy = {
-            subscribe: sinon.spy(),
-            on: sinon.spy()
-        }
-        const ioSpy = {sockets: {connected: sockets}};
-        setUpRedis(redisSpy, ioSpy);
-        expect(redisSpy.subscribe.getCall(0).args[0]).to.equal('plenario_observations');
-        const [type, callback] = redisSpy.on.getCall(0).args;
-        expect(type).to.equal('message');
-        expect(callback).to.be.a('function');
+        pushObservations(observations, sockets);
         
-        callback('whatevs', JSON.stringify(observations));
         expect(allInNetwork.emit.callCount).to.equal(4);
         expect(someInNetwork.emit.callCount).to.equal(2);
         expect(otherNetwork.emit.callCount).to.equal(0);
