@@ -69,6 +69,10 @@ pubsub.js#listenForSubscribers is where we manage incoming client connections. A
 
 pubsub.js#listenForRecords sets up a Redis subscription callback that responds to new batches of records. It first splits up the records into observations as described in the Terminology section. Then it loops through all connected clients and uses their `args` to determine if it should emit a given observation to a client.
 
-#### On Socket.io
+#### Thoughts on Socket.io
 
 In an earlier version of this server, we relied on some distincitive Socket.io features (especially room management). For performance's sake, we also enforce that the only allowable transport is Websockets (no long polling). Given that we're not using the high-level features of Socket.io, we should consider moving down to a lower level library like node-ws. It's not a slam dunk though, because some of the Socket.io niceties (like automatically pinging clients to maintain an up-to-date list of which clients are connected, and automatic reconnection attempts on the client side) do make our lives easier.
+
+#### Deployment
+
+It is expected that the socket server is deployed in an Elastic Beanstalk group, in the Node 6.10.x environment, behind an Application Load Balancer (NOT a classic load balancer). The information needed to deploy is not currently under version control (i.e. we don't yet have CloudFormation or similar). The file app/.ebextensions/01-ngninx.config contains the secret sauce to allow each EC2 instance's copy of nginx to proxy Websocket connections. When we're ready to reënable push-to-deploy, we should be able to make some light edits to .travis.yml to push to the current Beanstalk environment.
