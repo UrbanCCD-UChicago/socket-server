@@ -69,6 +69,12 @@ pubsub.js#listenForSubscribers is where we manage incoming client connections. A
 
 pubsub.js#listenForRecords sets up a Redis subscription callback that responds to new batches of records. It first splits up the records into observations as described in the Terminology section. Then it loops through all connected clients and uses their `args` to determine if it should emit a given observation to a client.
 
+#### Fetching Metadata
+
+The SensorTreeCache class fetches and preprocesses metadata from postgres. In particular, it calls the [sensor tree](https://github.com/UrbanCCD-UChicago/plenario/blob/9e6479149ef72510e89f16942f4a826ef6351a90/plenario/dbscripts/sensor_tree.sql) stored procedure. The expected format of that can be seen in tests/fixtures.js#smallTree. After receiving the metadata, the cache stores two copies: one as-is for record splitting in _listenForRecords_ and one formatted to more easily validate the client's query arguments in _listenForSubscribers_. 
+
+The class has a #seed method that returns a promise that resolves after fetching and preprocessing the metadata for the first time. If #seed fails, the whole server will exit with an error, because it can not proceed. On instantiation, the class also sets a 10-minute interval to refresh its metadata. If a refresh fails, this is not a fatal error, because it can use the old version of the metadata. An important TODO is making sure that a refresh failure triggers an alert to a Plenario maintainer.
+
 #### Thoughts on Socket.io
 
 In an earlier version of this server, we relied on some distincitive Socket.io features (especially room management). For performance's sake, we also enforce that the only allowable transport is Websockets (no long polling). Given that we're not using the high-level features of Socket.io, we should consider moving down to a lower level library like node-ws. It's not a slam dunk though, because some of the Socket.io niceties (like automatically pinging clients to maintain an up-to-date list of which clients are connected, and automatic reconnection attempts on the client side) do make our lives easier.
