@@ -1,6 +1,7 @@
 node_modules/
 
 *.idea
+*.log
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
