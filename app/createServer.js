@@ -1,7 +1,11 @@
+const redis = require('redis');
 const winston = require('winston');
 
+const { REDIS_HOST, REDIS_PORT } = require('./config');
+const { listenForRecords, listenForSubscribers } = require("../app/pubsub.js");
+const { SensorTreeCache } = require("../app/sensorTreeCache.js");
 
-exports.createServer = createServer;
+module.exports.createServer = createServer;
 
 
 // This function is a handler for http requests sent by the elasticbeanstalk
@@ -14,34 +18,33 @@ function healthcheck(request, response) {
   }
 }
 
-function createServer(pgClient) {
-  const { SensorTreeCache } = require("../app/sensorTreeCache.js");
-  const {
-    listenForRecords,
-    listenForSubscribers
-  } = require("../app/pubsub.js");
 
-  const redis = require("redis").createClient({
-    host: process.env.REDIS_HOST || "localhost",
-    port: 6379,
-    retry_strategy
-  });
-
-  function retry_strategy(retryInfo) {
-    // If we've been at this for more than 10 seconds
-    // kill this process to give Elastic Beanstalk a chance at rebooting us.
-    if (retryInfo.total_retry_time > 1000 * 10) {
-      winston.error("Lost connection to Redis.");
-      process.exit(1);
-    }
-    // Wait one second between attempts.
-    return 1000;
+// This function defines the retry strategy for failed attempts at connecting
+// to redis. It will make an attempt once per second, for 10 seconds. If it
+// exceeds those 10 seconds, it kills the server to give elastic beanstalk a
+// chance at rebooting it.
+function retryRedisConnection(retryInfo) {
+  winston.error("Connection attempt to redis failed, retrying...");
+  if (retryInfo.total_retry_time > 1000 * 10) {
+    winston.error("Failed all connection attempts to redis, exiting server.");
+    process.exit(1);
   }
+  return 1000;
+}
 
-  const app = require("http").createServer(healthcheck);
-  const io = require("socket.io")(app, {
-    transports: ["websocket"]
+
+function createServer(pgClient) {
+  const server = require("http").createServer(healthcheck);
+  const io = require("socket.io")(server, {transports: ["websocket"]});
+  const redisClient = redis.createClient({
+    host: REDIS_HOST,
+    port: REDIS_PORT,
+    retry_strategy: retryRedisConnection
   });
+
+  winston.info('Established connection to redis.');
+  winston.info('host: ' + REDIS_HOST);
+  winston.info('port: ' + REDIS_PORT);
 
   const sensorTreeCache = new SensorTreeCache(pgClient);
   sensorTreeCache
@@ -52,7 +55,7 @@ function createServer(pgClient) {
     })
     .then(cache => {
       listenForSubscribers(cache, io);
-      listenForRecords(cache, io, redis);
-      app.listen(8081);
+      listenForRecords(cache, io, redisClient);
+      server.listen(8081);
     });
 }
