@@ -1,8 +1,10 @@
 const _ = require('underscore');
-const REDIS_CHANNEL_NAME = 'plenario_observations';
 const clone = require('clone');
+const winston = require('winston');
 
-/* 
+const REDIS_CHANNEL_NAME = 'plenario_observations';
+
+/*
     listenForRecords and helpers:
     Sets up callback that parses records sent over redis
     and distributes them to the sockets that have subscribed to them.
@@ -10,7 +12,7 @@ const clone = require('clone');
 
 function listenForRecords(cache, io, redis) {
     redis.subscribe(REDIS_CHANNEL_NAME);
-    redis.on('message', (channel, msg) => { 
+    redis.on('message', (channel, msg) => {
         // Parse records
         let records;
         try {
@@ -47,43 +49,43 @@ function splitRecordIntoObservations(tree, record) {
     // Does this combination of network, node and sensor exist in our metadata?
     const sensorMetadata = extractSensorMetadata(tree, record);
     if (!sensorMetadata) return null;
-    /** 
+    /**
      * We maintain a mapping from Beehive naming to Plenario naming in
      * the leaf nodes (sensor objects) of the tree.
-     * 
+     *
      * {
      *      pressure: "atmospheric_pressure.pressure",
      *      temperature: "temperature.temperature",
      *      internal_temperature: "temperature.internal_temperature"
      * }
-     * 
+     *
      * where the keys are "nicknames" that Beehive uses,
      * and the values are the features of interest maintained in Apiary.
      * (The part before the dot is the feature of interest name;
      *  the part after the dot is the specific property of the feature.)
-     * 
+     *
      * The data documents in the record look like:
-     * 
+     *
      * {
      *      pressure: 12,
      *      temperature: 58
      *      internal_temperature: 103
      * }
-     * 
-     * So the formatting task is to translate from Beehive nickname 
+     *
+     * So the formatting task is to translate from Beehive nickname
      * and create a separate observation for each where the metadata is the same,
      * but the observation object is distinct
      * {
      *   type: sensorObservations
      *   attributes: {
      *      node: foo,
-     * 
+     *
      *      ...
      *      feature: temperature,
      *      properties: {temperature: 58, internal_temperature: 103 }
      *   }
      * },
-     * { 
+     * {
      *   type: sensorObservations
      *   attributes: {
      *      node: foo,
@@ -92,9 +94,9 @@ function splitRecordIntoObservations(tree, record) {
      *      properties: {pressure: 12}
      *   }
      * }
-     * 
+     *
      * **/
-    
+
     const {sensor, node, network, datetime} = record;
 
     // Loop 1: Split up the observed properties by feature
@@ -113,7 +115,7 @@ function splitRecordIntoObservations(tree, record) {
     }
 
     // Loop 2: Turn each collection of observed properties into a JSONAPI-ish observation object
-    // Return array with one JSONAPI observation object 
+    // Return array with one JSONAPI observation object
     // for each feature present in the record
     return _.values(observations).map(o => {
         const observationTemplate = {
@@ -132,10 +134,10 @@ function extractSensorMetadata(tree, observation) {
     const {network, node, sensor} = observation;
     let sensorMetadata;
     try {
-        sensorMetadata = tree[network][node][sensor];    
+        sensorMetadata = tree[network][node][sensor];
     }
     catch (e) {}
-    // sensorMetadata will be undefined if an exception was thrown 
+    // sensorMetadata will be undefined if an exception was thrown
     // or if the sensor metadata just happened to be undefined
     if (sensorMetadata) {
         return sensorMetadata;
@@ -153,7 +155,7 @@ function shouldSend(args, observation) {
     return pairs.every(([set, individual]) => set.has(individual));
 }
 
-/* 
+/*
     listenForSubscribers and helpers:
     Sets up callback that takes in newly connected sockets,
     parses the query arguments submitted with them,
@@ -172,12 +174,12 @@ function listenForSubscribers(cache, io) {
 }
 
 /**
- * 
+ *
  * @param {*} rawArgs
- *  User provided query arguments 
+ *  User provided query arguments
  * @param {*} tree
     formatted style, like formattedTree in tests/fixtures.js
- * 
+ *
  * Returns an object with keys "networks", "nodes", "sensors", and "features"
  * where each value is an ES6 Set of strings representing the subset the user has selected.
  */
@@ -186,7 +188,7 @@ function parseArgs(rawArgs, tree) {
     if (!networkName) return {err: 'You must specify a sensor network'};
     tree = tree[networkName] // Trim tree to part under the network
     if (!tree) return {err: `The network ${networkName} does not exist`};
-    
+
     // For consistency, make networks a set of one.
     const validatedArgs = {
         networks: new Set([networkName])
@@ -213,12 +215,12 @@ function parseArgs(rawArgs, tree) {
         if (invalidKeys.length > 0) {
             return {err: `Could not find selected ${f}: ${invalidKeys.join(',')}`};
         }
-        // Trim the tree. 
+        // Trim the tree.
         // If keys is ['a', 'c'] and tree is {a: {b: 1}, c: {d: 2}, e: {f: 3}}
         // Chop down to  {b: 1, d: 2}
         tree = _.values(_.pick(tree, ...keys))
                 .reduce((chopped, branch) => Object.assign(chopped, branch), {});
-        validatedArgs[f] = new Set(keys); 
+        validatedArgs[f] = new Set(keys);
     }
     return validatedArgs;
 }

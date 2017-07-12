@@ -35,7 +35,7 @@ function retryRedisConnection(retryInfo) {
 
 function createServer(pgClient) {
   const server = require("http").createServer(healthcheck);
-  const io = require("socket.io")(server, {transports: ["websocket"]});
+  const io = require("socket.io")(server);
   const redisClient = redis.createClient({
     host: REDIS_HOST,
     port: REDIS_PORT,
