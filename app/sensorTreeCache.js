@@ -1,3 +1,6 @@
+const winston = require('winston');
+
+
 const _ = require('underscore');
 const clone = require('clone');
 
@@ -9,9 +12,9 @@ class SensorTreeCache {
             .catch(err => {
                 // Just log the error on a refresh.
                 // Client can still use the cached vesion.
-                // Consider troubleshooting steps here, 
+                // Consider troubleshooting steps here,
                 // like attempting to reconnect to postgres.
-                console.log(`Error: could not refresh sensor metadata: ${err}`);
+                winston.error(`Could not refresh sensor metadata: ${err}`);
             });
         }, 1000*60*10);
     }
@@ -30,7 +33,7 @@ class SensorTreeCache {
                 this.recordTree = tree;
             }
             catch (e) {
-                console.log('Could not traverse tree from postgres: ' + e);
+                winston.error('Could not traverse network tree from postgres.');
                 throw e;
             }
         });
@@ -56,13 +59,13 @@ class SensorTreeCache {
         return tree;
     }
     /*
-        Turns 
+        Turns
     {
-        nickname1: 'feature1.property1', 
+        nickname1: 'feature1.property1',
         nickname2: 'feature1.property2',
         nickname3: 'feature2.property1'
     }
-        into 
+        into
     {
         feature1: null,
         feature2: null
@@ -73,7 +76,7 @@ class SensorTreeCache {
         let features = _.values(featureObject).map(op => op.split('.')[0]);
         // and dedupe.
         features = [...new Set(features)];
-        // Make object mapping each feature to null. Looks silly, 
+        // Make object mapping each feature to null. Looks silly,
         // but we're just going for consistent structure in the tree.
         const munged = {};
         for (let f of features) {

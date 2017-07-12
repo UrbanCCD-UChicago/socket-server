@@ -1,3 +1,6 @@
+const winston = require('winston');
+
+
 exports.createServer = createServer;
 
 function createServer(pgClient) {
@@ -17,7 +20,7 @@ function createServer(pgClient) {
     // If we've been at this for more than 10 seconds
     // kill this process to give Elastic Beanstalk a chance at rebooting us.
     if (retryInfo.total_retry_time > 1000 * 10) {
-      console.log("Fatal error: Lost connection to Redis.");
+      winston.error("Lost connection to Redis.");
       process.exit(1);
     }
     // Wait one second between attempts.
@@ -32,12 +35,8 @@ function createServer(pgClient) {
   const sensorTreeCache = new SensorTreeCache(pgClient);
   sensorTreeCache
     .seed()
-    .catch(err => {
-      // Abort on error if we fail to initiate the sensor tree cache
-      console.log(
-        `Fatal error: could not initialize sensor metadata: ${err}`,
-        err.stack
-      );
+    .catch(e => {
+      console.error(`Could not initialize sensor metadata: ${e}`, e.stack);
       process.exit(1);
     })
     .then(cache => {
