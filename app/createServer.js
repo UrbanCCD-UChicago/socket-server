@@ -3,6 +3,17 @@ const winston = require('winston');
 
 exports.createServer = createServer;
 
+
+// This function is a handler for http requests sent by the elasticbeanstalk
+// health checker. Without this method, the environment will be displayed as
+// 'severe' in a scary red color.
+function healthcheck(request, response) {
+  if (request.method == 'GET' && request.url == '/') {
+    response.writeHead(200);
+    response.end();
+  }
+}
+
 function createServer(pgClient) {
   const { SensorTreeCache } = require("../app/sensorTreeCache.js");
   const {
@@ -27,7 +38,7 @@ function createServer(pgClient) {
     return 1000;
   }
 
-  const app = require("http").createServer();
+  const app = require("http").createServer(healthcheck);
   const io = require("socket.io")(app, {
     transports: ["websocket"]
   });
@@ -36,7 +47,7 @@ function createServer(pgClient) {
   sensorTreeCache
     .seed()
     .catch(e => {
-      console.error(`Could not initialize sensor metadata: ${e}`, e.stack);
+      winston.error(`Could not initialize sensor metadata: ${e}`, e.stack);
       process.exit(1);
     })
     .then(cache => {
